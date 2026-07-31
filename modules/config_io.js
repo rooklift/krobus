@@ -28,8 +28,6 @@ exports.defaults = {
 	"width": 1200,
 	"height": 800,
 	"maxed": false,
-	"foo": true,
-	"bar": 1,
 	"replay_folder": null,
 };
 
