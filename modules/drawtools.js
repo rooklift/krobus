@@ -342,18 +342,19 @@ function draw_tile_info(replay, index, pl, x, y) {
 		lines.push(`${tile.crop} plant, ${age} day${age === 1 ? "" : "s"} old.`);
 
 		let cd = CROPS[tile.crop];
-		if (cd) {
-			if (cd.ongoing) {
-				let base = `Yields every ${cd.interval} day${cd.interval === 1 ? "" : "s"} from age ${cd.first_yield_day}`;
-				lines.push(age < cd.first_yield_day ? `${base} (first in ${cd.first_yield_day - age}).` : `${base}.`);
-			} else {
-				let ws = Math.floor((cd.max_yield_day + 1) / 2);
-				let status = (age < ws) ? `opens in ${ws - age}` : ((age <= cd.max_yield_day) ? "open now" : "closed");
-				lines.push(`Watering window: age ${ws}-${cd.max_yield_day} (${status}).`);
-			}
+		if (cd && cd.ongoing) {
+			let base = `Yields every ${cd.interval} day${cd.interval === 1 ? "" : "s"} from age ${cd.first_yield_day}`;
+			lines.push(age < cd.first_yield_day ? `${base} (first in ${cd.first_yield_day - age}).` : `${base}.`);
 		}
 
 		lines.push(`Yield ready: ${tile.yield_units}` + (cd ? ` (max ${cd.max_yield})` : ""));
+
+		if (cd && !cd.ongoing) {
+			let ws = Math.floor((cd.max_yield_day + 1) / 2);
+			let status = (age < ws) ? `opens in ${ws - age}` : ((age <= cd.max_yield_day) ? "open now" : "closed");
+			lines.push(`Watering window: age ${ws}-${cd.max_yield_day} (${status}).`);
+		}
+
 		lines.push(`Watered today: ${tile.watered_today ? "yes" : "no"}`)
 		lines.push(`Unwatered days: ${tile.consecutive_unwatered}`);
 
