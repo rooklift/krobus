@@ -21,17 +21,22 @@ body {
 	flex: 0 0 auto;
 }
 
-#rightcol {
-	background-color: #2a2a2a;		/* Must match BACKGROUND_COLOURS.canvas in drawtools.js. */
+#farmcols {
+	display: flex;
+	gap: 1em;
 	flex: 1 1 auto;
+	overflow: hidden;		/* On narrow windows the rightmost columns clip rather than wreck the layout. */
+}
+
+.farmcol {
+	background-color: #2a2a2a;		/* Must match BACKGROUND_COLOURS.canvas in drawtools.js. */
 	display: flex;
 	flex-direction: column;
-	overflow: hidden;
+	flex: 0 0 auto;
 }
 
 canvas {
 	display: block;
-	margin: 0.5em 0;
 	flex: 0 0 auto;				/* Don't let the column squeeze the canvas vertically... */
 	align-self: flex-start;		/* ...or stretch it horizontally; either would scale the bitmap. */
 }
@@ -51,18 +56,11 @@ canvas {
 	margin-top: 1.25em;
 }
 
-#farmboxes {
-	display: flex;		/* Child divs are created by drawtools, one per player, sized to sit under the boards. */
-	flex: 1 1 auto;		/* Extends the farm info area to the bottom of the window; farm actions will live here too. */
-}
-
 .farmbox {
 	white-space: pre-wrap;
 	text-indent: 1.5em hanging each-line;	/* Indent soft-wrapped continuation lines only. Ignored if unsupported. */
 	margin: 0.25em 0;
-	min-height: 12em;		/* Room for the 5 lines plus several wraps, so the tilebox below doesn't jump while stepping. */
-	box-sizing: border-box;	/* Padding comes out of the width drawtools sets, keeping the inter-div gap aligned with the canvas. */
-	padding-left: 4px;
+	flex: 1 1 auto;		/* Farm info extends to the bottom of its column; farm actions will live here too. */
 }
 
 #tilebox {

@@ -81,7 +81,7 @@ let hub_main_props = {
 	},
 
 	click(event) {
-		let selection = drawtools.tile_at_point(this.replay, event.offsetX, event.offsetY);
+		let selection = drawtools.tile_at_point(this.replay, event.target, event.offsetX, event.offsetY);
 		if (selection && this.selection &&
 				selection[0] === this.selection[0] && selection[1] === this.selection[1] && selection[2] === this.selection[2]) {
 			selection = null;											// Clicking the selected tile deselects it.

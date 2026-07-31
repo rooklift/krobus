@@ -4,8 +4,6 @@
 
 const TILE_SIZE = 36;
 const PAD = 8;
-const BOARD_GAP = 48;
-const HEADER_HEIGHT = 24;
 
 const CROP_COLOURS = {
 	WHEAT:      "#d4b84a",
@@ -53,23 +51,20 @@ const BACKGROUND_COLOURS = {
 
 function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 
-	let canvas = document.getElementById("canvas");
-	let ctx = canvas.getContext("2d");
 	let statusbox = document.getElementById("statusbox");
 	let markettitle = document.getElementById("markettitle");
 	let pricesbox = document.getElementById("pricesbox");
 	let shopstitle = document.getElementById("shopstitle");
 	let shopsbox = document.getElementById("shopsbox");
+	let farmcols = document.getElementById("farmcols");
 
 	if (!replay) {
-		ctx.fillStyle = BACKGROUND_COLOURS.canvas;
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
 		statusbox.textContent = "";
 		markettitle.textContent = "";
 		pricesbox.textContent = "";
 		shopstitle.textContent = "";
 		shopsbox.textContent = "";
-		document.getElementById("farmboxes").textContent = "";		// Also deletes the per-player child divs.
+		farmcols.textContent = "";			// Also deletes the per-player columns.
 		document.getElementById("tilebox").textContent = "";
 		return;
 	}
@@ -77,51 +72,56 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 	let bs = replay.board_size();
 	let players = replay.num_players();
 	let board_px = bs * TILE_SIZE;
+	let canvas_px = PAD * 2 + board_px;
 
-	let want_width = PAD * 2 + players * board_px + (players - 1) * BOARD_GAP;
-	let want_height = PAD * 2 + HEADER_HEIGHT + board_px;
+	// One column per player, each holding its own canvas and info div...
 
-	if (canvas.width !== want_width || canvas.height !== want_height) {
-		canvas.width = want_width;
-		canvas.height = want_height;
+	while (farmcols.children.length > players) {
+		farmcols.removeChild(farmcols.lastChild);
 	}
-
-	ctx.fillStyle = BACKGROUND_COLOURS.canvas;
-	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	while (farmcols.children.length < players) {
+		let col = document.createElement("div");
+		col.classList.add("farmcol");
+		let cv = document.createElement("canvas");
+		cv.dataset.player = `${farmcols.children.length}`;		// Lets tile_at_point identify the clicked board.
+		let d = document.createElement("div");
+		d.classList.add("farmbox");
+		col.appendChild(cv);
+		col.appendChild(d);
+		farmcols.appendChild(col);
+	}
 
 	let day = replay.day(index);
 
-	let farmboxes = document.getElementById("farmboxes");
-	while (farmboxes.children.length > players) {
-		farmboxes.removeChild(farmboxes.lastChild);
-	}
-	while (farmboxes.children.length < players) {
-		let d = document.createElement("div");
-		d.classList.add("farmbox");
-		farmboxes.appendChild(d);
-	}
-	farmboxes.style.paddingLeft = `${PAD}px`;
-	farmboxes.style.gap = `${BOARD_GAP}px`;
-
 	for (let pl = 0; pl < players; pl++) {
-		let ox = PAD + pl * (board_px + BOARD_GAP);
-		let oy = PAD + HEADER_HEIGHT;
-		draw_header(ctx, replay, index, pl, ox, PAD);
-		draw_board(ctx, replay.tiles(index, pl), bs, day, ox, oy);
-		draw_units(ctx, replay.units(index, pl), ox, oy);
-		draw_player_info(replay, index, pl, farmboxes.children[pl], board_px);
+
+		let col = farmcols.children[pl];
+		let cv = col.children[0];
+		let ctx = cv.getContext("2d");
+
+		if (cv.width !== canvas_px || cv.height !== canvas_px) {
+			cv.width = canvas_px;
+			cv.height = canvas_px;
+		}
+
+		ctx.fillStyle = BACKGROUND_COLOURS.canvas;
+		ctx.fillRect(0, 0, cv.width, cv.height);
+
+		draw_board(ctx, replay.tiles(index, pl), bs, day, PAD, PAD);
+		draw_units(ctx, replay.units(index, pl), PAD, PAD);
+
+		if (Array.isArray(selection) && selection[0] === pl &&
+				selection[1] >= 0 && selection[1] < bs && selection[2] >= 0 && selection[2] < bs) {
+			ctx.strokeStyle = "#ffffff";
+			ctx.lineWidth = 2;
+			ctx.strokeRect(PAD + selection[1] * TILE_SIZE + 1, PAD + selection[2] * TILE_SIZE + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+		}
+
+		draw_player_info(replay, index, pl, col.children[1]);
 	}
 
 	if (Array.isArray(selection) && selection[0] >= 0 && selection[0] < players) {
-		let [sel_pl, sel_x, sel_y] = selection;
-		if (sel_x >= 0 && sel_x < bs && sel_y >= 0 && sel_y < bs) {
-			let ox = PAD + sel_pl * (board_px + BOARD_GAP);
-			let oy = PAD + HEADER_HEIGHT;
-			ctx.strokeStyle = "#ffffff";
-			ctx.lineWidth = 2;
-			ctx.strokeRect(ox + sel_x * TILE_SIZE + 1, oy + sel_y * TILE_SIZE + 1, TILE_SIZE - 2, TILE_SIZE - 2);
-		}
-		draw_tile_info(replay, index, sel_pl, sel_x, sel_y);
+		draw_tile_info(replay, index, selection[0], selection[1], selection[2]);
 	} else {
 		document.getElementById("tilebox").textContent = "";
 	}
@@ -168,14 +168,6 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 	shopsbox.textContent = demand_entries.length > 0 ?
 			demand_entries.map(([item, n]) => item.padEnd(11) + `${n}`.padStart(3)).join("\n") :
 			"(no shops open)";
-}
-
-function draw_header(ctx, replay, index, pl, x, y) {
-	ctx.font = "bold 14px Consolas, monospace";
-	ctx.textAlign = "left";
-	ctx.textBaseline = "top";
-	ctx.fillStyle = "#efefef";
-	ctx.fillText(`${replay.team_name(pl)} -- $${Math.round(replay.money(index, pl))}`, x, y + 2);
 }
 
 function draw_board(ctx, tiles, bs, day, ox, oy) {
@@ -250,11 +242,11 @@ function draw_tile(ctx, tile, day, px, py) {
 	}
 }
 
-function draw_player_info(replay, index, pl, div, width) {
+function draw_player_info(replay, index, pl, div) {
 
-	// Shed, seeds, and carried items, as text in the player's div below the canvas.
-	// Carried items live in per-unit inventories which we aggregate; they auto-drop
-	// to the shed at end of day anyway.
+	// Name and money, then shed, seeds, and carried items, as text in the player's
+	// div below their canvas. Carried items live in per-unit inventories which we
+	// aggregate; they auto-drop to the shed at end of day anyway.
 
 	let shed = replay.shed(index, pl);
 	let shed_total = Object.values(shed).reduce((a, b) => a + b, 0);
@@ -289,6 +281,7 @@ function draw_player_info(replay, index, pl, div, width) {
 	}
 
 	let lines = [
+		`${replay.team_name(pl)} -- $${Math.round(replay.money(index, pl))}`,
 		`Shed ${shed_total}/${replay.shed_capacity()}: ${itemlist(shed)}`,
 		`Seeds: ${itemlist(replay.seeds(index, pl))}`,
 		`Carrying: ${itemlist(carried)}`,
@@ -296,7 +289,8 @@ function draw_player_info(replay, index, pl, div, width) {
 		`Animals: ${itemlist(animals)}` + (empty_pens > 0 ? ` (${empty_pens} empty pen${empty_pens === 1 ? "" : "s"})` : ""),
 	];
 
-	div.style.width = `${width}px`;
+	div.style.paddingLeft = `${PAD}px`;
+	div.style.paddingRight = `${PAD}px`;
 	div.textContent = lines.join("\n");
 }
 
@@ -340,24 +334,28 @@ function market_inv_to_str(n, equilibrium) {
 	return s;
 }
 
-function tile_at_point(replay, cx, cy) {
+function tile_at_point(replay, target, cx, cy) {
 
-	// Inverts the board layout: canvas pixel coords --> [player, x, y], or null if
-	// the point isn't on a tile. For use with event.offsetX / event.offsetY.
+	// Inverts the board layout: clicked element + pixel coords --> [player, x, y], or
+	// null if the point isn't a tile. For use with event.target / offsetX / offsetY;
+	// only clicks landing on a player's canvas (identified by its dataset) count.
 
-	if (!replay) {
+	if (!replay || !target || !target.dataset || target.dataset.player === undefined) {
+		return null;
+	}
+
+	let pl = parseInt(target.dataset.player, 10);
+
+	if (!Number.isInteger(pl) || pl < 0 || pl >= replay.num_players()) {
 		return null;
 	}
 
 	let bs = replay.board_size();
-	let board_px = bs * TILE_SIZE;
+	let x = Math.floor((cx - PAD) / TILE_SIZE);
+	let y = Math.floor((cy - PAD) / TILE_SIZE);
 
-	for (let pl = 0; pl < replay.num_players(); pl++) {
-		let x = Math.floor((cx - (PAD + pl * (board_px + BOARD_GAP))) / TILE_SIZE);
-		let y = Math.floor((cy - (PAD + HEADER_HEIGHT)) / TILE_SIZE);
-		if (x >= 0 && x < bs && y >= 0 && y < bs) {
-			return [pl, x, y];
-		}
+	if (x >= 0 && x < bs && y >= 0 && y < bs) {
+		return [pl, x, y];
 	}
 
 	return null;
