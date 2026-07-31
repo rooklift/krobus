@@ -364,7 +364,14 @@ function draw_tile_info(replay, index, pl, x, y) {
 		lines.push(`Unwatered days: ${tile.consecutive_unwatered}`);
 
 		if (tile.fertilized_until_day >= day) {
-			lines.push(`Fertilized through day ${tile.fertilized_until_day}`);
+			let remaining = tile.fertilized_until_day - day + 1;		// Counting today.
+			if (remaining === 1) {
+				lines.push(`Fertilized: final day`);
+			} else {
+				lines.push(`Fertilized: ${remaining} days left`);
+			}
+		} else {
+			lines.push(`Fertilized: no`);
 		}
 
 		if (tile.max_lifespan_step >= 0) {
