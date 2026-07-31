@@ -40,6 +40,18 @@ const ANIMAL_PRODUCTS = {
 	SHEEP: "WOOL",
 };
 
+// Crop lifecycle parameters, in days-of-age; likewise copied from the runner. One-shot
+// crops gain yield when watered between (max_yield_day + 1) // 2 and max_yield_day;
+// ongoing crops produce every `interval` days from first_yield_day.
+
+const CROPS = {
+	WHEAT:      {first_yield_day: 2,  max_yield_day: 4,  interval: 0, max_yield: 6, ongoing: false},
+	CARROT:     {first_yield_day: 2,  max_yield_day: 3,  interval: 0, max_yield: 4, ongoing: false},
+	TOMATO:     {first_yield_day: 8,  max_yield_day: 8,  interval: 1, max_yield: 4, ongoing: true},
+	STRAWBERRY: {first_yield_day: 10, max_yield_day: 10, interval: 2, max_yield: 4, ongoing: true},
+	MELON:      {first_yield_day: 10, max_yield_day: 12, interval: 0, max_yield: 6, ongoing: false},
+};
+
 const BACKGROUND_COLOURS = {
 	canvas:  "#2a2a2a",
 	locked:  "#1e1e1e",
@@ -456,9 +468,24 @@ function draw_tile_info(replay, index, pl, x, y) {
 
 	} else if (tile.kind === "PLANT") {
 
-		lines.push(`${tile.crop} plant, planted day ${tile.planted_day} (${day - tile.planted_day} days old).`);
+		let age = day - tile.planted_day;
+		lines.push(`${tile.crop} plant, ${age} day${age === 1 ? "" : "s"} old.`);
+
+		let cd = CROPS[tile.crop];
+		if (cd) {
+			if (cd.ongoing) {
+				let base = `Yields every ${cd.interval} day${cd.interval === 1 ? "" : "s"} from day ${cd.first_yield_day}`;
+				lines.push(age < cd.first_yield_day ? `${base} (first in ${cd.first_yield_day - age}).` : `${base} (max ${cd.max_yield} held).`);
+			} else {
+				let ws = Math.floor((cd.max_yield_day + 1) / 2);
+				let status = (age < ws) ? `opens in ${ws - age}` : ((age <= cd.max_yield_day) ? "open now" : "closed");
+				lines.push(`Watering window: days ${ws}-${cd.max_yield_day} (${status}).`);
+			}
+		}
+
 		lines.push(`Yield ready: ${tile.yield_units}`);
-		lines.push(`Watered today: ${tile.watered_today ? "yes" : "no"} (unwatered days: ${tile.consecutive_unwatered})`);
+		lines.push(`Watered today: ${tile.watered_today ? "yes" : "no"}`)
+		lines.push(`Unwatered days: ${tile.consecutive_unwatered}`);
 
 		if (tile.fertilized_until_day >= day) {
 			lines.push(`Fertilized through day ${tile.fertilized_until_day}.`);
