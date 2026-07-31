@@ -247,8 +247,32 @@ function menu_build() {
 					}
 				},
 				{
+					label: "Backward (ALIAS)",
+					accelerator: "Left",
+					visible: false,
+					acceleratorWorksWhenHidden: true,
+					click: () => {
+						win.webContents.send("call", {
+							fn: "backward",
+							args: [1]
+						});
+					}
+				},
+				{
 					label: "Forward",
 					accelerator: "Down",
+					click: () => {
+						win.webContents.send("call", {
+							fn: "forward",
+							args: [1]
+						});
+					}
+				},
+				{
+					label: "Forward (ALIAS)",
+					accelerator: "Right",
+					visible: false,
+					acceleratorWorksWhenHidden: true,
 					click: () => {
 						win.webContents.send("call", {
 							fn: "forward",
