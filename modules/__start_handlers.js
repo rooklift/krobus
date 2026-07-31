@@ -21,15 +21,11 @@ window.addEventListener("dragover", (event) => {		// Necessary to prevent always
 });
 
 window.addEventListener("drop", (event) => {
-	console.log(0);
 	event.preventDefault();
 	let files = [];
 	if (event.dataTransfer && event.dataTransfer.files) {
-		console.log(1);
 		for (let file of event.dataTransfer.files) {
-			console.log(2);
 			if (get_path_for_file(file)) {
-				console.log(3);
 				hub.load_replay(get_path_for_file(file));
 				break;
 			}
