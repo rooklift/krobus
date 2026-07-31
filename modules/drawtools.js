@@ -129,7 +129,7 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 	entries.sort((a, b) => a.ratio - b.ratio);		// Scarcest first, most glutted last.
 
 	pricesbox.textContent = entries.map(e => {
-		return e.item.padEnd(11) + `$${e.price}`.padStart(5) + market_inv_to_str(market_inv[e.item], e.eq).padStart(7);
+		return e.item.padEnd(11) + `$${e.price}`.padStart(5) + market_inv_to_str(market_inv[e.item], e.eq).padStart(8) + " stored";
 	}).join("\n");
 
 	let shops = replay.shops(index);
@@ -344,8 +344,6 @@ function market_inv_to_str(n, equilibrium) {
 	}
 	return s;
 }
-
-
 
 function tile_at_point(replay, cx, cy) {
 
