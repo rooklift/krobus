@@ -192,6 +192,14 @@ function menu_build() {
 					}
 				},
 				{
+					label: "Dark mode",
+					type: "checkbox",
+					checked: config.dark_mode,
+					click: () => {
+						win.webContents.send("toggle", "dark_mode");
+					}
+				},
+				{
 					type: "separator",
 				},
 				{
@@ -202,7 +210,7 @@ function menu_build() {
 			]
 		},
 		{
-			label: "View",
+			label: "Navigation",
 			submenu: [
 				{
 					label: "Backward",

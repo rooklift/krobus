@@ -1,15 +1,56 @@
 "use strict";
 
 const TILE_SIZE = 40;
-const PAD = 8;
+const PAD = 1;		// Board offset from the canvas edge. Tiles are inset 1px on every side, so this
+					// makes the edge gap 2px -- the same as the internal lines between tiles.
 
-const CROP_COLOURS = {
+// The dark and light colours. The canvas and everything on it (tiles, letters, rings,
+// unit circles, yield counts) stays dark in both themes -- those colours are all
+// calibrated against the dark canvas -- so really only the body and text change.
+// The body and text entries are applied to document.body by set_dark().
+
+const CROP_COLOURS_DARK = {
 	WHEAT:      "#ddcc66",
 	CARROT:     "#ee8833",
 	TOMATO:     "#ee8833",
 	STRAWBERRY: "#eebbbb",
 	MELON:      "#55bb77",
 };
+
+const CROP_COLOURS_LIGHT = {
+	WHEAT:      "#ddcc66",
+	CARROT:     "#ee8833",
+	TOMATO:     "#ee8833",
+	STRAWBERRY: "#eebbbb",
+	MELON:      "#55bb77",
+};
+
+const BACKGROUND_COLOURS_DARK = {
+	body:    "#1f1f1f",
+	canvas:  "#1f1f1f",
+	locked:  "#181818",
+	soil:    "#5a4023",
+	plant:   "#2f5d31",
+	coop:    "#7b6144",
+	pasture: "#5c6e46",
+	text:    "#efefef",
+};
+
+const BACKGROUND_COLOURS_LIGHT = {
+	body:    "#e8e4dc",
+	canvas:  "#1f1f1f",
+	locked:  "#d2ccc2",
+	soil:    "#5a4023",
+	plant:   "#2f5d31",
+	coop:    "#7b6144",
+	pasture: "#5c6e46",
+	text:    "#26221c",
+};
+
+// The colours actually in use, set by set_dark()...
+
+let CROP_COLOURS = Object.assign({}, CROP_COLOURS_DARK);
+let BACKGROUND_COLOURS = Object.assign({}, BACKGROUND_COLOURS_DARK);
 
 // What each town shop consumes is not declared in the replay, so this is copied from
 // the game runner's SHOPS dict. Single-product shops consume double per tick.
@@ -50,15 +91,6 @@ const CROPS = {
 	TOMATO:     {first_yield_day: 8,  max_yield_day: 8,  interval: 1, max_yield: 4, ongoing: true},
 	STRAWBERRY: {first_yield_day: 10, max_yield_day: 10, interval: 2, max_yield: 4, ongoing: true},
 	MELON:      {first_yield_day: 10, max_yield_day: 12, interval: 0, max_yield: 6, ongoing: false},
-};
-
-const BACKGROUND_COLOURS = {
-	canvas:  "#1f1f1f",
-	locked:  "#181818",
-	soil:    "#5a4023",
-	plant:   "#2f5d31",
-	coop:    "#7b6144",
-	pasture: "#5c6e46",
 };
 
 const MARKET_OP_ORDER = ["HIRE", "BUY_LAND", "BUY_SEED", "BUY_ANIMAL", "BUY_PRODUCT", "SELL"];
@@ -512,6 +544,18 @@ function tile_at_point(replay, target, cx, cy) {
 	return null;
 }
 
+function set_dark(dark) {
+	if (dark) {
+		Object.assign(CROP_COLOURS, CROP_COLOURS_DARK);
+		Object.assign(BACKGROUND_COLOURS, BACKGROUND_COLOURS_DARK);
+	} else {
+		Object.assign(CROP_COLOURS, CROP_COLOURS_LIGHT);
+		Object.assign(BACKGROUND_COLOURS, BACKGROUND_COLOURS_LIGHT);
+	}
+	document.body.style.backgroundColor = BACKGROUND_COLOURS.body;		// The stylesheet's colours are just the dark-mode
+	document.body.style.color = BACKGROUND_COLOURS.text;				// defaults; this overrides them either way.
+}
+
 // ------------------------------------------------------------------------------------------------
 
 function market_orders_strings(orders) {
@@ -581,5 +625,6 @@ function market_inv_to_str(n, equilibrium) {
 
 module.exports = {
 	draw,
+	set_dark,
 	tile_at_point
 };

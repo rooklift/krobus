@@ -28,6 +28,7 @@ exports.defaults = {
 	"width": 1380,
 	"height": 800,
 	"maxed": false,
+	"dark_mode": true,
 	"replay_folder": null,
 };
 

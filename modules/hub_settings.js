@@ -1,10 +1,13 @@
 "use strict";
 
 const {ipcRenderer} = require("electron");
+const drawtools = require("./drawtools");
 
 const multichecks = {};
 
-const togglechecks = {};
+const togglechecks = {
+	dark_mode:			["App", "Dark mode"],
+};
 
 for (let menupath of Object.values(multichecks)) {
 	ipcRenderer.send("verify_menupath", menupath);
@@ -14,6 +17,8 @@ for (let menupath of Object.values(togglechecks)) {
 	ipcRenderer.send("verify_menupath", menupath);
 }
 
+drawtools.set_dark(config.dark_mode);		// Apply the saved theme at startup; config is loaded by this point.
+
 module.exports = {
 
 	set: function(key, value) {
@@ -21,7 +26,14 @@ module.exports = {
 		config[key] = value;
 
 		switch (key) {
+
 			// Followup actions go here.
+
+			case "dark_mode":
+
+				drawtools.set_dark(value);
+				this.draw();
+				break;
 		}
 
 		if (multichecks.hasOwnProperty(key)) {

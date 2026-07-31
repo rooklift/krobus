@@ -26,6 +26,7 @@ body {
 #farmcols {
 	display: flex;
 	gap: 1em;
+	margin-top: 0.75em;
 	padding-left: 1.5em;	/* With the canvas's own 8px pad this matches the 32px dark gap between the player boards. */
 	flex: 1 1 auto;
 	overflow: hidden;		/* On narrow windows the rightmost columns clip rather than wreck the layout. */
