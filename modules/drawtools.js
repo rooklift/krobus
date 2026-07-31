@@ -74,7 +74,7 @@ function draw(replay, index) {
 
 	let prices = replay.prices(index);
 	let market_inv = replay.market_inventory(index);
-	pricesbox.textContent = Object.entries(prices).map(([item, price]) => `${item} $${price} (${market_inv_to_str(market_inv[item])})`).join("   ");
+	pricesbox.textContent = Object.entries(prices).map(([item, price]) => `${item} $${price} (${market_inv_to_str(market_inv[item], replay.equilibrium(item))})`).join("   ");
 
 	let shops = replay.shops(index);
 	shopsbox.textContent = "Shops: " + (shops.length > 0 ? shops.join(", ") : "(none)");
@@ -233,8 +233,8 @@ function draw_units(ctx, units, ox, oy) {
 	}
 }
 
-function market_inv_to_str(n) {
-	let s = (n - 10000).toString();
+function market_inv_to_str(n, equilibrium) {
+	let s = (n - equilibrium).toString();
 	if (s[0] !== "-") {
 		s = "+" + s;
 	}

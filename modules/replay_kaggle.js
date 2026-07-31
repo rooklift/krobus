@@ -59,8 +59,12 @@ const kaggle_replay_props = {
 		return this.r.steps[i][0].observation.market.prices;
 	},
 
-	market_inventory: function(i) {		// Object of item --> units the market holds. Prices rise as this falls below 10000.
+	market_inventory: function(i) {		// Object of item --> units the market holds. Prices rise as this falls below equilibrium.
 		return this.r.steps[i][0].observation.market.inventory;
+	},
+
+	equilibrium: function(item) {		// The market initialises each item's inventory to its I0 equilibrium,
+		return this.r.steps[0][0].observation.market.inventory[item];		// so step 0 has it (even with marketParams overrides).
 	},
 
 	shops: function(i) {				// Array of unlocked shop names.
