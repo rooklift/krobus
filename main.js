@@ -122,6 +122,10 @@ electron.app.whenReady().then(() => {
 		verify_menupath(msg);
 	});
 
+	electron.ipcMain.on("set_title", (event, msg) => {
+		win.setTitle(msg);
+	});
+
 	electron.Menu.setApplicationMenu(menu);
 	menu_is_set = true;
 

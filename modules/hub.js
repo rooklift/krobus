@@ -2,6 +2,7 @@
 
 const {ipcRenderer} = require("electron");
 const fs = require("fs");
+const path = require("path");
 
 const config_io = require("./config_io");
 const drawtools = require("./drawtools");
@@ -59,6 +60,7 @@ let hub_main_props = {
 			return;
 		}
 
+		ipcRenderer.send("set_title", path.basename(filepath));
 		this.draw();
 	},
 
