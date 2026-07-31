@@ -18,6 +18,25 @@ const CROP_COLOURS = {
 	MELON:      "#59c26a",
 };
 
+// What each town shop consumes is not declared in the replay, so this is copied from
+// the game runner's SHOPS dict. Single-product shops consume double per tick.
+
+const SHOPS = {
+	BAKERY:         ["EGG", "WHEAT"],
+	PIZZA_SHOP:     ["MILK", "TOMATO", "WHEAT"],
+	BRUNCH_SPOT:    ["EGG", "WHEAT", "STRAWBERRY"],
+	YARN_STORE:     ["WOOL"],
+	ICE_CREAM_SHOP: ["STRAWBERRY", "MILK", "WHEAT"],
+	PET_CAFE:       ["CARROT"],
+	SMOOTHIE_SHOP:  ["STRAWBERRY", "MILK"],
+	FARMERS_MARKET: ["WHEAT", "CARROT", "TOMATO", "STRAWBERRY"],
+};
+
+// The town center consumes every product except FERTILIZER, with a demand multiplier
+// stepping up by day (also copied from the runner; highest threshold first).
+
+const TOWN_CENTER_DEMAND_SCHEDULE = [[20, 4], [10, 2], [0, 1]];
+
 const BACKGROUND_COLOURS = {
 	canvas:  "#2a2a2a",
 	locked:  "#1e1e1e",
@@ -33,6 +52,7 @@ function draw(replay, index) {
 	let ctx = canvas.getContext("2d");
 	let statusbox = document.getElementById("statusbox");
 	let pricesbox = document.getElementById("pricesbox");
+	let shopstitle = document.getElementById("shopstitle");
 	let shopsbox = document.getElementById("shopsbox");
 
 	if (!replay) {
@@ -40,6 +60,7 @@ function draw(replay, index) {
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 		statusbox.textContent = "No replay loaded. Use Open... (Ctrl+O) to load a Kaggle replay.";
 		pricesbox.textContent = "";
+		shopstitle.textContent = "";
 		shopsbox.textContent = "";
 		return;
 	}
@@ -74,10 +95,43 @@ function draw(replay, index) {
 
 	let prices = replay.prices(index);
 	let market_inv = replay.market_inventory(index);
-	pricesbox.textContent = Object.entries(prices).map(([item, price]) => `${item} $${price} (${market_inv_to_str(market_inv[item], replay.equilibrium(item))})`).join("   ");
+
+	let entries = Object.entries(prices).map(([item, price]) => {
+		let eq = replay.equilibrium(item);
+		return {item, price, eq, ratio: (market_inv[item] - eq) / eq};
+	});
+	entries.sort((a, b) => a.ratio - b.ratio);		// Scarcest first, most glutted last.
+
+	pricesbox.textContent = entries.map(e => {
+		return e.item.padEnd(11) + `$${e.price}`.padStart(5) + market_inv_to_str(market_inv[e.item], e.eq).padStart(7);
+	}).join("\n");
 
 	let shops = replay.shops(index);
-	shopsbox.textContent = "Shops: " + (shops.length > 0 ? shops.join(", ") : "(none)");
+	let ticks_per_day = Math.floor(replay.turns_per_day() / replay.shop_sell_interval());
+
+	let demand = {};
+	for (let name of shops) {
+		let products = SHOPS[name] || [];
+		let mult = (products.length === 1) ? 2 : 1;
+		for (let item of products) {
+			demand[item] = (demand[item] || 0) + mult * ticks_per_day;
+		}
+	}
+
+	let center_ticks = Math.floor(replay.turns_per_day() / replay.town_center_sell_interval());
+	let center_mult = TOWN_CENTER_DEMAND_SCHEDULE.find(([threshold, mult]) => day >= threshold)[1];
+	for (let item of Object.keys(prices)) {
+		if (item !== "FERTILIZER") {
+			demand[item] = (demand[item] || 0) + center_mult * center_ticks;
+		}
+	}
+
+	shopstitle.textContent = `Town demand / day (${shops.length}/${Object.keys(SHOPS).length} shops open)`;
+
+	let demand_entries = Object.entries(demand).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+	shopsbox.textContent = demand_entries.length > 0 ?
+			demand_entries.map(([item, n]) => item.padEnd(11) + `${n}`.padStart(3)).join("\n") :
+			"(no shops open)";
 }
 
 function draw_header(ctx, replay, index, pl, x, y) {

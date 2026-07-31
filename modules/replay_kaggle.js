@@ -82,6 +82,21 @@ const kaggle_replay_props = {
 		return (typeof cap === "number") ? cap : 100;
 	},
 
+	turns_per_day: function() {
+		let n = this.r.configuration.turnsPerDay;
+		return (typeof n === "number") ? n : 24;
+	},
+
+	shop_sell_interval: function() {	// Unlocked shops consume from the market every this many steps.
+		let n = this.r.configuration.townShopSellInterval;
+		return (typeof n === "number") ? n : 4;
+	},
+
+	town_center_sell_interval: function() {		// The town center consumes from the market every this many steps.
+		let n = this.r.configuration.townCenterSellInterval;
+		return (typeof n === "number") ? n : 12;
+	},
+
 	seeds: function(i, pl) {			// Object of crop --> count.
 		return this.r.steps[i][pl].observation.private.seeds;
 	},

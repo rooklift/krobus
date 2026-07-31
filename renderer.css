@@ -7,6 +7,9 @@ body {
 	padding: 0;
 	overflow: hidden;
 	font-family: Consolas, "Courier New", monospace;
+	display: flex;
+	align-items: flex-start;
+	gap: 1.5em;
 }
 
 canvas {
@@ -14,12 +17,24 @@ canvas {
 	margin: 0.5em 0;
 }
 
-#statusbox, #shopsbox {
+#statusbox {
 	margin: 0.25em 0;
 	white-space: nowrap;
 }
 
-#pricesbox {
+#markettitle, #shopstitle {
+	font-weight: bold;
 	margin: 0.25em 0;
-	max-width: 784px;
+}
+
+#shopstitle {
+	margin-top: 1.25em;
+}
+
+#shopsbox {
+	white-space: pre;
+}
+
+#pricesbox {
+	white-space: pre;
 }
