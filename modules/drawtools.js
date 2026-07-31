@@ -203,8 +203,8 @@ function draw_tile(ctx, tile, day, px, py) {
 	let letter = "";
 	let letter_colour = "#efefef";
 	let yield_units = 0;
-	let watered = false;
-	let fertilized = false;
+	let blue_ring = false;			// Watered (plants) or fed (animals).
+	let green_ring = false;		// Fertilized (plants) or cared for (animals).
 
 	if (tile === "LOCKED") {
 		bg = BACKGROUND_COLOURS.locked;
@@ -217,12 +217,14 @@ function draw_tile(ctx, tile, day, px, py) {
 			letter = tile.crop[0].toLowerCase();
 			letter_colour = CROP_COLOURS[tile.crop] || "#efefef";
 			yield_units = tile.yield_units;
-			watered = tile.watered_today;
-			fertilized = tile.fertilized_until_day >= day;
+			blue_ring = tile.watered_today;
+			green_ring = tile.fertilized_until_day >= day;
 		} else if (tile.animal) {
 			bg = (tile.kind === "COOP") ? BACKGROUND_COLOURS.coop : BACKGROUND_COLOURS.pasture;
 			letter = tile.animal[0];
 			yield_units = tile.yield_units;
+			blue_ring = tile.fed_today;
+			green_ring = tile.cared_today;
 		} else if (tile.kind === "COOP" || tile.kind === "PASTURE") {
 			bg = (tile.kind === "COOP") ? BACKGROUND_COLOURS.coop : BACKGROUND_COLOURS.pasture;
 			letter = tile.kind[0].toLowerCase();
@@ -233,15 +235,34 @@ function draw_tile(ctx, tile, day, px, py) {
 	ctx.fillStyle = bg;
 	ctx.fillRect(px + 1, py + 1, TILE_SIZE - 2, TILE_SIZE - 2);
 
-	if (watered) {
-		ctx.strokeStyle = "#5ab4e0";
-		ctx.lineWidth = 2;
-		ctx.strokeRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
-	}
+	if (blue_ring || green_ring) {
 
-	if (fertilized) {
-		ctx.fillStyle = "#c86bd8";
-		ctx.fillRect(px + 3, py + TILE_SIZE - 8, 5, 5);		// Bottom-left; units cluster from the top-left.
+		// Both at once: blue takes the top and right edges, green the left and bottom.
+
+		let x0 = px + 2;
+		let y0 = py + 2;
+		let x1 = px + TILE_SIZE - 2;
+		let y1 = py + TILE_SIZE - 2;
+
+		ctx.lineWidth = 2;
+
+		if (blue_ring && green_ring) {
+			ctx.strokeStyle = "#5ab4e0";
+			ctx.beginPath();
+			ctx.moveTo(x0, y0);
+			ctx.lineTo(x1, y0);
+			ctx.lineTo(x1, y1);
+			ctx.stroke();
+			ctx.strokeStyle = "#55bb77";
+			ctx.beginPath();
+			ctx.moveTo(x0, y0);
+			ctx.lineTo(x0, y1);
+			ctx.lineTo(x1, y1);
+			ctx.stroke();
+		} else {
+			ctx.strokeStyle = blue_ring ? "#5ab4e0" : "#55bb77";
+			ctx.strokeRect(x0, y0, TILE_SIZE - 4, TILE_SIZE - 4);
+		}
 	}
 
 	if (letter) {
