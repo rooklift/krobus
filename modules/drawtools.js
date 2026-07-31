@@ -7,7 +7,7 @@ const PAD = 8;
 const BOARD_GAP = 48;
 const HEADER_HEIGHT = 24;
 const FOOTER_LINE_HEIGHT = 16;
-const FOOTER_LINES = 3;
+const FOOTER_LINES = 5;
 const FOOTER_HEIGHT = 6 + FOOTER_LINES * FOOTER_LINE_HEIGHT;
 
 const CROP_COLOURS = {
@@ -51,6 +51,7 @@ function draw(replay, index) {
 	let canvas = document.getElementById("canvas");
 	let ctx = canvas.getContext("2d");
 	let statusbox = document.getElementById("statusbox");
+	let markettitle = document.getElementById("markettitle");
 	let pricesbox = document.getElementById("pricesbox");
 	let shopstitle = document.getElementById("shopstitle");
 	let shopsbox = document.getElementById("shopsbox");
@@ -58,7 +59,8 @@ function draw(replay, index) {
 	if (!replay) {
 		ctx.fillStyle = BACKGROUND_COLOURS.canvas;
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
-		statusbox.textContent = "No replay loaded. Use Open... (Ctrl+O) to load a Kaggle replay.";
+		statusbox.textContent = "";
+		markettitle.textContent = "";
 		pricesbox.textContent = "";
 		shopstitle.textContent = "";
 		shopsbox.textContent = "";
@@ -91,7 +93,8 @@ function draw(replay, index) {
 		draw_player_info(ctx, replay, index, pl, ox, oy + board_px + 6, board_px);
 	}
 
-	statusbox.textContent = `Step ${index + 1} / ${replay.length()} -- Day ${day}, Hour ${replay.hour(index)}`;
+	markettitle.textContent = "Market";
+	statusbox.textContent = `Step ${index + 1} / ${replay.length()}\nDay ${day}, Hour ${replay.hour(index)}`;
 
 	let prices = replay.prices(index);
 	let market_inv = replay.market_inventory(index);
@@ -229,10 +232,34 @@ function draw_player_info(ctx, replay, index, pl, x, y, max_width) {
 		}
 	}
 
+	let crops = {};
+	let animals = {};
+	let weeds = 0;
+	let empty_pens = 0;
+
+	for (let row of replay.tiles(index, pl)) {
+		for (let tile of row) {
+			if (typeof tile !== "object" || tile === null) {
+				continue;
+			}
+			if (tile.kind === "WEED") {
+				weeds++;
+			} else if (tile.kind === "PLANT") {
+				crops[tile.crop] = (crops[tile.crop] || 0) + 1;
+			} else if (tile.animal) {
+				animals[tile.animal] = (animals[tile.animal] || 0) + 1;
+			} else if (tile.kind === "COOP" || tile.kind === "PASTURE") {
+				empty_pens++;
+			}
+		}
+	}
+
 	let lines = [
 		`Shed ${shed_total}/${replay.shed_capacity()}: ${itemlist(shed)}`,
 		`Seeds: ${itemlist(replay.seeds(index, pl))}`,
 		`Carrying: ${itemlist(carried)}`,
+		`Growing: ${itemlist(crops)}` + (weeds > 0 ? ` (${weeds} weed${weeds === 1 ? "" : "s"})` : ""),
+		`Animals: ${itemlist(animals)}` + (empty_pens > 0 ? ` (${empty_pens} empty pen${empty_pens === 1 ? "" : "s"})` : ""),
 	];
 
 	ctx.font = "12px Consolas, monospace";
