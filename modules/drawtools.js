@@ -102,6 +102,7 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 		if (cv.width !== canvas_px || cv.height !== canvas_px) {
 			cv.width = canvas_px;
 			cv.height = canvas_px;
+			col.style.width = `${canvas_px}px`;		// Pin the column too, else long farmbox lines widen it instead of wrapping.
 		}
 
 		ctx.fillStyle = BACKGROUND_COLOURS.canvas;
