@@ -3,6 +3,7 @@
 const TILE_SIZE = 40;
 const PAD = 1;		// Board offset from the canvas edge. Tiles are inset 1px on every side, so this
 					// makes the edge gap 2px -- the same as the internal lines between tiles.
+const TEXT_PAD = 4;	// Farmbox text inset, no longer tied to the (now tiny) canvas pad.
 
 // The dark and light colours. The canvas and everything on it (tiles, letters, rings,
 // unit circles, yield counts) stays dark in both themes -- those colours are all
@@ -156,8 +157,8 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 				selection[1] >= 0 && selection[1] < bs && selection[2] >= 0 && selection[2] < bs) {
 			ctx.strokeStyle = "#ffffff";
 			ctx.lineWidth = 2;
-			ctx.strokeRect(PAD + selection[1] * TILE_SIZE + 1, PAD + selection[2] * TILE_SIZE + 1, TILE_SIZE - 2, TILE_SIZE - 2);
-		}
+			ctx.strokeRect(PAD + selection[1] * TILE_SIZE, PAD + selection[2] * TILE_SIZE, TILE_SIZE, TILE_SIZE);		// The 2px stroke straddles the cell
+		}																												// boundary, consuming the gridlines.
 
 		draw_player_info(replay, index, pl, col.children[1]);
 	}
@@ -330,8 +331,8 @@ function draw_player_info(replay, index, pl, div) {
 	lines.push(``);
 	lines.push(...market_orders_strings(replay.market_orders(index, pl)));
 
-	div.style.paddingLeft = `${PAD}px`;
-	div.style.paddingRight = `${PAD}px`;
+	div.style.paddingLeft = `${TEXT_PAD}px`;
+	div.style.paddingRight = `${TEXT_PAD}px`;
 	div.textContent = lines.join("\n");
 }
 
