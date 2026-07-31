@@ -284,22 +284,22 @@ function menu_build() {
 					type: "separator",
 				},
 				{
-					label: "Backward 10",
+					label: "Backward 12",
 					accelerator: "PageUp",
 					click: () => {
 						win.webContents.send("call", {
 							fn: "backward",
-							args: [10]
+							args: [12]
 						});
 					}
 				},
 				{
-					label: "Forward 10",
+					label: "Forward 12",
 					accelerator: "PageDown",
 					click: () => {
 						win.webContents.send("call", {
 							fn: "forward",
-							args: [10]
+							args: [12]
 						});
 					}
 				},
