@@ -349,9 +349,9 @@ function draw_tile_info(replay, index, pl, x, y) {
 
 		if (cd) {
 			let gate = (!cd.ongoing && age < cd.first_yield_day) ? `, harvest from age ${cd.first_yield_day}` : "";
-			lines.push(`Yield ready: ${tile.yield_units} (max ${cd.max_yield}${gate})`);
+			lines.push(`Yield: ${tile.yield_units} (max ${cd.max_yield}${gate})`);
 		} else {
-			lines.push(`Yield ready: ${tile.yield_units}`);
+			lines.push(`Yield: ${tile.yield_units}`);
 		}
 
 		if (cd && !cd.ongoing) {
@@ -380,7 +380,7 @@ function draw_tile_info(replay, index, pl, x, y) {
 
 		let ad = ANIMALS[tile.animal];
 		if (ad) {
-			let base = `Yields every ${ad.interval} day${ad.interval === 1 ? "" : "s"} from age ${ad.first_yield_day}`;
+			let base = `${ad.product} every ${ad.interval} day${ad.interval === 1 ? "" : "s"} from age ${ad.first_yield_day}`;
 			lines.push(age < ad.first_yield_day ? `${base} (first in ${ad.first_yield_day - age})` : `${base}`);
 		}
 
