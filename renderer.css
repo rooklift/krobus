@@ -7,6 +7,8 @@ body {
 	overflow: hidden;
 	font-family: Consolas, "Courier New", monospace;
 	display: flex;
+	user-select: none;		/* App-like feel: no accidental text highlighting when clicking around. */
+	cursor: default;		/* And no I-beam cursor over text. */
 }
 
 #leftcol {
