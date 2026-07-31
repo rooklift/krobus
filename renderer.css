@@ -1,5 +1,5 @@
 body {
-	background-color: #333333;
+	background-color: #2a2a2a;		/* Must match BACKGROUND_COLOURS.canvas in drawtools.js. */
 	color: #efefef;
 	height: 100vh;
 	margin: 0;
@@ -13,7 +13,7 @@ body {
 	display: flex;
 	flex-direction: column;
 	flex: 0 0 auto;
-	width: 21em;			/* Fixed so the right column doesn't shift as tile info comes and goes. */
+	width: 25em;			/* Fixed so the right column doesn't shift as tile info comes and goes. */
 }
 
 #marketpane {
@@ -22,15 +22,14 @@ body {
 }
 
 #farmcols {
-	background-color: #2a2a2a;
 	display: flex;
 	gap: 1em;
+	padding-left: 1.5em;	/* With the canvas's own 8px pad this matches the 32px dark gap between the player boards. */
 	flex: 1 1 auto;
 	overflow: hidden;		/* On narrow windows the rightmost columns clip rather than wreck the layout. */
 }
 
 .farmcol {
-	background-color: #2a2a2a;		/* Must match BACKGROUND_COLOURS.canvas in drawtools.js. */
 	display: flex;
 	flex-direction: column;
 	flex: 0 0 auto;
@@ -47,7 +46,7 @@ canvas {
 	white-space: pre-line;
 }
 
-#markettitle, #shopstitle {
+#markettitle, #shopstitle, #tiletitle {
 	font-weight: bold;
 	margin: 0.25em 0;
 	white-space: nowrap;
@@ -65,13 +64,15 @@ canvas {
 }
 
 #tilebox {
-	background-color: #222222;
-	white-space: pre-wrap;	/* The column is narrow, so let long tile info lines wrap rather than clip. */
-	text-indent: 1.5em hanging each-line;	/* Indent soft-wrapped continuation lines only. Ignored if unsupported. */
 	margin: 0;
 	padding: 0.75em 1em;
 	flex: 1 1 auto;			/* Fill the column down to the bottom-left corner. */
 	min-height: 8em;
+}
+
+#tilebody {
+	white-space: pre-wrap;	/* The column is narrow, so let long tile info lines wrap rather than clip. */
+	text-indent: 1.5em hanging each-line;	/* Indent soft-wrapped continuation lines only. Ignored if unsupported. */
 }
 
 #shopsbox {

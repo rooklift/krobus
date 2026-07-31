@@ -73,7 +73,7 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 	if (!replay) {
 		statusbox.textContent = "";
 		farmcols.textContent = "";			// Also deletes the per-player columns.
-		document.getElementById("tilebox").textContent = "";
+		draw_tile_info(null, 0, 0, 0, 0);	// Clears.
 		draw_market_info(null, 0);
 		return;
 	}
@@ -133,7 +133,7 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 	if (Array.isArray(selection) && selection[0] >= 0 && selection[0] < players) {
 		draw_tile_info(replay, index, selection[0], selection[1], selection[2]);
 	} else {
-		document.getElementById("tilebox").textContent = "";
+		draw_tile_info(null, 0, 0, 0, 0);	// Clears.
 	}
 
 	statusbox.textContent = `Step ${index} / ${replay.length()}\nDay ${day}, Hour ${replay.hour(index)}`;
@@ -304,19 +304,16 @@ function draw_player_info(replay, index, pl, div) {
 function draw_tile_info(replay, index, pl, x, y) {
 
 	// Writes everything knowable about one tile (and anyone standing on it) into the
-	// tilebox. draw() calls this with the current selection.
+	// tilebox's title and body divs. draw() calls this with the current selection,
+	// or with a null replay to clear the pane.
 
-	let tilebox = document.getElementById("tilebox");
+	let tiletitle = document.getElementById("tiletitle");
+	let tilebody = document.getElementById("tilebody");
 
-	if (!replay) {
-		tilebox.textContent = "";
-		return;
-	}
-
-	let bs = replay.board_size();
-
-	if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= bs || y >= bs) {
-		tilebox.textContent = "";
+	if (!replay || !Number.isInteger(x) || !Number.isInteger(y) ||
+			x < 0 || y < 0 || x >= replay.board_size() || y >= replay.board_size()) {
+		tiletitle.textContent = "";
+		tilebody.textContent = "";
 		return;
 	}
 
@@ -404,7 +401,8 @@ function draw_tile_info(replay, index, pl, x, y) {
 		}
 	}
 
-	tilebox.textContent = lines.join("\n");
+	tiletitle.textContent = "Selected:";
+	tilebody.textContent = lines.join("\n");
 }
 
 function draw_market_info(replay, index) {
