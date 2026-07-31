@@ -1,7 +1,5 @@
 "use strict";
 
-// Draw should acquire all its info by calling methods on the replay object.
-
 const TILE_SIZE = 40;
 const PAD = 8;
 
@@ -62,6 +60,10 @@ const BACKGROUND_COLOURS = {
 	coop:    "#7b6144",
 	pasture: "#5c6e46",
 };
+
+const MARKET_OP_ORDER = ["HIRE", "BUY_LAND", "BUY_SEED", "BUY_ANIMAL", "BUY_PRODUCT", "SELL"];
+
+// ------------------------------------------------------------------------------------------------
 
 function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 
@@ -185,6 +187,8 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 			"(no shops open)";
 }
 
+// ------------------------------------------------------------------------------------------------
+
 function draw_board(ctx, tiles, bs, day, ox, oy) {
 	for (let y = 0; y < bs; y++) {
 		for (let x = 0; x < bs; x++) {
@@ -257,6 +261,35 @@ function draw_tile(ctx, tile, day, px, py) {
 	}
 }
 
+function draw_units(ctx, units, ox, oy) {
+
+	// Units on the same tile are offset into a small cluster so all remain visible.
+
+	const offsets = [[0, 0], [-0.22, -0.22], [0.22, -0.22], [-0.22, 0.22], [0.22, 0.22]];
+
+	let seen_at = {};
+
+	for (let n = 0; n < units.length; n++) {
+		let [x, y] = units[n];
+		let key = `${x},${y}`;
+		let stack = seen_at[key] || 0;
+		seen_at[key] = stack + 1;
+		let [dx, dy] = offsets[stack % offsets.length];
+		let cx = ox + (x + 0.5 + dx) * TILE_SIZE;
+		let cy = oy + (y + 0.5 + dy) * TILE_SIZE;
+		let radius = (n === 0) ? TILE_SIZE * 0.2 : TILE_SIZE * 0.14;
+		ctx.beginPath();
+		ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+		ctx.fillStyle = (n === 0) ? "#ffe066" : "#f0f0f0";
+		ctx.fill();
+		ctx.strokeStyle = "#222222";
+		ctx.lineWidth = 1.5;
+		ctx.stroke();
+	}
+}
+
+// ------------------------------------------------------------------------------------------------
+
 function draw_player_info(replay, index, pl, div) {
 
 	// Name and money, then shed, seeds, and carried items, as text in the player's
@@ -312,125 +345,6 @@ function draw_player_info(replay, index, pl, div) {
 	div.style.paddingLeft = `${PAD}px`;
 	div.style.paddingRight = `${PAD}px`;
 	div.textContent = lines.join("\n");
-}
-
-const MARKET_OP_ORDER = ["HIRE", "BUY_LAND", "BUY_SEED", "BUY_ANIMAL", "BUY_PRODUCT", "SELL"];
-
-function market_orders_strings(orders) {
-
-	// Purely for display: merges duplicate orders (HIRE x4; summed SELL counts) and
-	// sorts them into a fixed rational order, though the engine ran them as given.
-	// Returns an array of display lines, empty if there were no orders.
-
-	let merged = new Map();
-
-	for (let o of orders) {
-		if (!Array.isArray(o) || o.length === 0) {
-			continue;
-		}
-		let op = o[0];
-		let key;
-		let entry;
-		if (op === "HIRE" || op === "BUY_LAND") {
-			key = op;
-			entry = merged.get(key) || {op: op, item: "", n: 0, tally: true};
-			entry.n += 1;
-		} else if (MARKET_OP_ORDER.includes(op) && o.length >= 2) {
-			key = `${op} ${o[1]}`;
-			entry = merged.get(key) || {op: op, item: `${o[1]}`, n: 0};
-			let n = parseInt(o[2], 10);
-			entry.n += Number.isFinite(n) ? n : 1;
-		} else {
-			key = o.join(" ");				// Unrecognised op: show verbatim, tallied if repeated.
-			entry = merged.get(key) || {op: key, item: "", n: 0, tally: true};
-			entry.n += 1;
-		}
-		merged.set(key, entry);
-	}
-
-	let entries = [...merged.values()];
-
-	entries.sort((a, b) => {
-		let ai = MARKET_OP_ORDER.indexOf(a.op);
-		let bi = MARKET_OP_ORDER.indexOf(b.op);
-		if (ai === -1) ai = MARKET_OP_ORDER.length;
-		if (bi === -1) bi = MARKET_OP_ORDER.length;
-		return (ai - bi) || a.item.localeCompare(b.item);
-	});
-
-	return entries.map(e => {
-		if (e.tally) {
-			return e.n > 1 ? `${e.op} x${e.n}` : e.op;
-		}
-		return `${e.op} ${e.item} ${e.n}`;
-	});
-}
-
-function itemlist(o) {
-	let parts = Object.entries(o).filter(([item, n]) => n > 0).map(([item, n]) => `${item} ${n}`);
-	return parts.length > 0 ? parts.join(", ") : "-";
-}
-
-function draw_units(ctx, units, ox, oy) {
-
-	// Units on the same tile are offset into a small cluster so all remain visible.
-
-	const offsets = [[0, 0], [-0.22, -0.22], [0.22, -0.22], [-0.22, 0.22], [0.22, 0.22]];
-
-	let seen_at = {};
-
-	for (let n = 0; n < units.length; n++) {
-		let [x, y] = units[n];
-		let key = `${x},${y}`;
-		let stack = seen_at[key] || 0;
-		seen_at[key] = stack + 1;
-		let [dx, dy] = offsets[stack % offsets.length];
-		let cx = ox + (x + 0.5 + dx) * TILE_SIZE;
-		let cy = oy + (y + 0.5 + dy) * TILE_SIZE;
-		let radius = (n === 0) ? TILE_SIZE * 0.2 : TILE_SIZE * 0.14;
-		ctx.beginPath();
-		ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-		ctx.fillStyle = (n === 0) ? "#ffe066" : "#f0f0f0";
-		ctx.fill();
-		ctx.strokeStyle = "#222222";
-		ctx.lineWidth = 1.5;
-		ctx.stroke();
-	}
-}
-
-function market_inv_to_str(n, equilibrium) {
-	let s = (n - equilibrium).toString();
-	if (s[0] !== "-") {
-		s = "+" + s;
-	}
-	return s;
-}
-
-function tile_at_point(replay, target, cx, cy) {
-
-	// Inverts the board layout: clicked element + pixel coords --> [player, x, y], or
-	// null if the point isn't a tile. For use with event.target / offsetX / offsetY;
-	// only clicks landing on a player's canvas (identified by its dataset) count.
-
-	if (!replay || !target || !target.dataset || target.dataset.player === undefined) {
-		return null;
-	}
-
-	let pl = parseInt(target.dataset.player, 10);
-
-	if (!Number.isInteger(pl) || pl < 0 || pl >= replay.num_players()) {
-		return null;
-	}
-
-	let bs = replay.board_size();
-	let x = Math.floor((cx - PAD) / TILE_SIZE);
-	let y = Math.floor((cy - PAD) / TILE_SIZE);
-
-	if (x >= 0 && x < bs && y >= 0 && y < bs) {
-		return [pl, x, y];
-	}
-
-	return null;
 }
 
 function draw_tile_info(replay, index, pl, x, y) {
@@ -539,10 +453,103 @@ function draw_tile_info(replay, index, pl, x, y) {
 	tilebox.textContent = lines.join("\n");
 }
 
+// ------------------------------------------------------------------------------------------------
 
+function tile_at_point(replay, target, cx, cy) {
+
+	// Inverts the board layout: clicked element + pixel coords --> [player, x, y], or
+	// null if the point isn't a tile. For use with event.target / offsetX / offsetY;
+	// only clicks landing on a player's canvas (identified by its dataset) count.
+
+	if (!replay || !target || !target.dataset || target.dataset.player === undefined) {
+		return null;
+	}
+
+	let pl = parseInt(target.dataset.player, 10);
+
+	if (!Number.isInteger(pl) || pl < 0 || pl >= replay.num_players()) {
+		return null;
+	}
+
+	let bs = replay.board_size();
+	let x = Math.floor((cx - PAD) / TILE_SIZE);
+	let y = Math.floor((cy - PAD) / TILE_SIZE);
+
+	if (x >= 0 && x < bs && y >= 0 && y < bs) {
+		return [pl, x, y];
+	}
+
+	return null;
+}
+
+// ------------------------------------------------------------------------------------------------
+
+function market_orders_strings(orders) {
+
+	// Purely for display: merges duplicate orders (HIRE x4; summed SELL counts) and
+	// sorts them into a fixed rational order, though the engine ran them as given.
+	// Returns an array of display lines, empty if there were no orders.
+
+	let merged = new Map();
+
+	for (let o of orders) {
+		if (!Array.isArray(o) || o.length === 0) {
+			continue;
+		}
+		let op = o[0];
+		let key;
+		let entry;
+		if (op === "HIRE" || op === "BUY_LAND") {
+			key = op;
+			entry = merged.get(key) || {op: op, item: "", n: 0, tally: true};
+			entry.n += 1;
+		} else if (MARKET_OP_ORDER.includes(op) && o.length >= 2) {
+			key = `${op} ${o[1]}`;
+			entry = merged.get(key) || {op: op, item: `${o[1]}`, n: 0};
+			let n = parseInt(o[2], 10);
+			entry.n += Number.isFinite(n) ? n : 1;
+		} else {
+			key = o.join(" ");				// Unrecognised op: show verbatim, tallied if repeated.
+			entry = merged.get(key) || {op: key, item: "", n: 0, tally: true};
+			entry.n += 1;
+		}
+		merged.set(key, entry);
+	}
+
+	let entries = [...merged.values()];
+
+	entries.sort((a, b) => {
+		let ai = MARKET_OP_ORDER.indexOf(a.op);
+		let bi = MARKET_OP_ORDER.indexOf(b.op);
+		if (ai === -1) ai = MARKET_OP_ORDER.length;
+		if (bi === -1) bi = MARKET_OP_ORDER.length;
+		return (ai - bi) || a.item.localeCompare(b.item);
+	});
+
+	return entries.map(e => {
+		if (e.tally) {
+			return e.n > 1 ? `${e.op} x${e.n}` : e.op;
+		}
+		return `${e.op} ${e.item} ${e.n}`;
+	});
+}
+
+function itemlist(o) {
+	let parts = Object.entries(o).filter(([item, n]) => n > 0).map(([item, n]) => `${item} ${n}`);
+	return parts.length > 0 ? parts.join(", ") : "-";
+}
+
+function market_inv_to_str(n, equilibrium) {
+	let s = (n - equilibrium).toString();
+	if (s[0] !== "-") {
+		s = "+" + s;
+	}
+	return s;
+}
+
+// ------------------------------------------------------------------------------------------------
 
 module.exports = {
 	draw,
-	draw_tile_info,
 	tile_at_point
 };
