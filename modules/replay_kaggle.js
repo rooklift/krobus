@@ -78,6 +78,21 @@ const kaggle_replay_props = {
 		return this.r.steps[i][0].observation.town.unlocked_shops;
 	},
 
+	next_unit_actions: function(i, pl) {
+
+		// The action each unit takes between step i and the next, aligned with units(i, pl)
+		// (main farmer first). Empty array at the final step or if the action is malformed.
+
+		if (i + 1 >= this.length()) {
+			return [];
+		}
+		let action = this.r.steps[i + 1][pl].action;
+		if (typeof action !== "object" || action === null) {
+			return [];
+		}
+		return [action.farmer].concat(Array.isArray(action.hands) ? action.hands : []);
+	},
+
 	unit_moves: function(i, pl) {
 
 		// For each unit at step i (main farmer first, matching units()), the [dx, dy] it
@@ -88,16 +103,7 @@ const kaggle_replay_props = {
 		let units = this.units(i, pl);
 		let ret = units.map(() => null);
 
-		if (i + 1 >= this.length()) {
-			return ret;
-		}
-
-		let action = this.r.steps[i + 1][pl].action;
-		if (typeof action !== "object" || action === null) {
-			return ret;
-		}
-
-		let unit_actions = [action.farmer].concat(Array.isArray(action.hands) ? action.hands : []);
+		let unit_actions = this.next_unit_actions(i, pl);
 		let tiles = this.tiles(i, pl);
 		let bs = this.board_size();
 

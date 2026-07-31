@@ -81,12 +81,46 @@ let hub_main_props = {
 	},
 
 	click(event) {
-		let selection = drawtools.tile_at_point(this.replay, event.target, event.offsetX, event.offsetY);
-		if (selection && this.selection &&
-				selection[0] === this.selection[0] && selection[1] === this.selection[1] && selection[2] === this.selection[2]) {
-			selection = null;											// Clicking the selected tile deselects it.
+
+		// Selection is null, or {type: "tile", player, x, y}, or {type: "unit", player, id}
+		// where id 0 is the main farmer and 1+ are the hands. Repeated clicks on a tile
+		// cycle: the tile --> each unit present (by id) --> the tile again...
+
+		let hit = drawtools.tile_at_point(this.replay, event.target, event.offsetX, event.offsetY);
+
+		if (!hit) {
+			this.selection = null;
+			this.draw();
+			return;
 		}
-		this.selection = selection;										// [player, x, y], or null.
+
+		let [pl, x, y] = hit;
+
+		let present = [];												// Ids of units standing on the clicked tile.
+		let units = this.replay.units(this.index, pl);
+		for (let n = 0; n < units.length; n++) {
+			if (units[n][0] === x && units[n][1] === y) {
+				present.push(n);
+			}
+		}
+
+		let next = {type: "tile", player: pl, x: x, y: y};
+		let sel = this.selection;
+
+		if (sel && sel.player === pl) {
+			if (sel.type === "tile" && sel.x === x && sel.y === y) {
+				if (present.length > 0) {
+					next = {type: "unit", player: pl, id: present[0]};
+				}
+			} else if (sel.type === "unit" && present.includes(sel.id)) {
+				let n = present.indexOf(sel.id);
+				if (n + 1 < present.length) {
+					next = {type: "unit", player: pl, id: present[n + 1]};
+				}														// Else wrap back round to the tile itself.
+			}
+		}
+
+		this.selection = next;
 		this.draw();
 	},
 

@@ -153,18 +153,31 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 		draw_board(ctx, replay.tiles(index, pl), bs, day, PAD, PAD);
 		draw_units(ctx, replay.units(index, pl), replay.unit_moves(index, pl), PAD, PAD);
 
-		if (Array.isArray(selection) && selection[0] === pl &&
-				selection[1] >= 0 && selection[1] < bs && selection[2] >= 0 && selection[2] < bs) {
+		let hl = null;										// The highlighted tile for this player, if any. For a
+		if (selection && selection.player === pl) {			// unit selection this follows the unit around the board.
+			if (selection.type === "tile") {
+				hl = [selection.x, selection.y];
+			} else if (selection.type === "unit") {
+				let units = replay.units(index, pl);
+				if (Number.isInteger(selection.id) && selection.id >= 0 && selection.id < units.length) {
+					hl = units[selection.id];
+				}
+			}
+		}
+
+		if (hl && hl[0] >= 0 && hl[0] < bs && hl[1] >= 0 && hl[1] < bs) {
 			ctx.strokeStyle = "#ffffff";
 			ctx.lineWidth = 2;
-			ctx.strokeRect(PAD + selection[1] * TILE_SIZE, PAD + selection[2] * TILE_SIZE, TILE_SIZE, TILE_SIZE);		// The 2px stroke straddles the cell
-		}																												// boundary, consuming the gridlines.
+			ctx.strokeRect(PAD + hl[0] * TILE_SIZE, PAD + hl[1] * TILE_SIZE, TILE_SIZE, TILE_SIZE);		// The 2px stroke straddles the cell
+		}																								// boundary, consuming the gridlines.
 
 		draw_player_info(replay, index, pl, col.children[1]);
 	}
 
-	if (Array.isArray(selection) && selection[0] >= 0 && selection[0] < players) {
-		draw_tile_info(replay, index, selection[0], selection[1], selection[2]);
+	if (selection && selection.type === "tile" && selection.player >= 0 && selection.player < players) {
+		draw_tile_info(replay, index, selection.player, selection.x, selection.y);
+	} else if (selection && selection.type === "unit" && selection.player >= 0 && selection.player < players) {
+		draw_unit_info(replay, index, selection.player, selection.id);
 	} else {
 		draw_tile_info(null, 0, 0, 0, 0);	// Clears.
 	}
@@ -469,6 +482,43 @@ function draw_tile_info(replay, index, pl, x, y) {
 			let label = (n === 0) ? "Farmer" : `Hand ${n}`;
 			lines.push(`${label} carrying: ${itemlist(inventories[n] || {})}`);
 		}
+	}
+
+	tiletitle.textContent = "Selected:";
+	tilebody.textContent = lines.join("\n");
+}
+
+function draw_unit_info(replay, index, pl, id) {
+
+	// Info about a selected unit (0 = the main farmer, 1+ = hands), into the tilebox's
+	// title and body divs. Hands only exist for a day, so the selected id may well not
+	// be on the board at the step being viewed.
+
+	let tiletitle = document.getElementById("tiletitle");
+	let tilebody = document.getElementById("tilebody");
+
+	if (!replay || !Number.isInteger(id) || id < 0) {
+		tiletitle.textContent = "";
+		tilebody.textContent = "";
+		return;
+	}
+
+	let label = (id === 0) ? "Farmer" : `Hand ${id}`;
+	let lines = [`${replay.team_name(pl)} -- ${label}`, ``];
+
+	let units = replay.units(index, pl);
+
+	if (id >= units.length) {
+
+		lines.push(`Not on the board at this time.`);
+
+	} else {
+
+		lines.push(`At tile [${units[id][0]}, ${units[id][1]}]`);
+		lines.push(`Carrying: ${itemlist(replay.inventories(index, pl)[id] || {})}`);
+
+		let action = replay.next_unit_actions(index, pl)[id];
+		lines.push(`Next action: ${Array.isArray(action) && action.length > 0 ? action.join(" ") : "-"}`);
 	}
 
 	tiletitle.textContent = "Selected:";
