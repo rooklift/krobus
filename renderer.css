@@ -32,6 +32,12 @@ canvas {
 	margin-top: 1.25em;
 }
 
+#tilebox {
+	white-space: pre;
+	margin: 0.25em 0;
+	min-height: 8em;		/* Reserve space so the layout doesn't jump as tile info appears. */
+}
+
 #shopsbox {
 	white-space: pre;
 }

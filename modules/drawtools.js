@@ -37,6 +37,14 @@ const SHOPS = {
 
 const TOWN_CENTER_DEMAND_SCHEDULE = [[20, 4], [10, 2], [0, 1]];
 
+// Also copied from the runner, for tile info display.
+
+const ANIMAL_PRODUCTS = {
+	GOOSE: "EGG",
+	COW:   "MILK",
+	SHEEP: "WOOL",
+};
+
 const BACKGROUND_COLOURS = {
 	canvas:  "#2a2a2a",
 	locked:  "#1e1e1e",
@@ -64,6 +72,7 @@ function draw(replay, index) {
 		pricesbox.textContent = "";
 		shopstitle.textContent = "";
 		shopsbox.textContent = "";
+		document.getElementById("tilebox").textContent = "";
 		return;
 	}
 
@@ -324,6 +333,87 @@ function market_inv_to_str(n, equilibrium) {
 
 
 
+function draw_tile_info(replay, index, pl, x, y) {
+
+	// Writes everything knowable about one tile (and anyone standing on it) into the
+	// tilebox. Not called by draw() -- the hub should call it on mouseover / click.
+
+	let tilebox = document.getElementById("tilebox");
+
+	if (!replay) {
+		tilebox.textContent = "";
+		return;
+	}
+
+	let bs = replay.board_size();
+
+	if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= bs || y >= bs) {
+		tilebox.textContent = "";
+		return;
+	}
+
+	let day = replay.day(index);
+	let tile = replay.tiles(index, pl)[y][x];
+
+	let lines = [`${replay.team_name(pl)} -- tile [${x}, ${y}]`];
+
+	if (tile === "LOCKED") {
+
+		lines.push("Locked (quadrant not yet purchased).");
+
+	} else if (tile === null) {
+
+		lines.push("Empty soil.");
+
+	} else if (tile.kind === "WEED") {
+
+		lines.push("Weed.");
+
+	} else if (tile.kind === "PLANT") {
+
+		lines.push(`${tile.crop} plant, planted day ${tile.planted_day} (${day - tile.planted_day} days old).`);
+		lines.push(`Yield ready: ${tile.yield_units}`);
+		lines.push(`Watered today: ${tile.watered_today ? "yes" : "no"} (consecutive unwatered days: ${tile.consecutive_unwatered})`);
+
+		if (tile.fertilized_until_day >= day) {
+			lines.push(`Fertilized through day ${tile.fertilized_until_day}.`);
+		}
+
+		if (tile.max_lifespan_step >= 0) {
+			lines.push(index >= tile.max_lifespan_step ?
+					`Decaying since step ${tile.max_lifespan_step} (1 yield per 2 steps).` :
+					`Decays from step ${tile.max_lifespan_step}.`);
+		}
+
+	} else if (tile.animal) {
+
+		lines.push(`${tile.animal} in ${tile.kind}, placed day ${tile.placed_day} (${day - tile.placed_day} days old).`);
+		lines.push(`${ANIMAL_PRODUCTS[tile.animal] || "Produce"} ready: ${tile.yield_units}`);
+		lines.push(`Fed today: ${tile.fed_today ? "yes" : "no"} (consecutive unfed days: ${tile.consecutive_unfed})`);
+		lines.push(`Cared for today: ${tile.cared_today ? "yes" : "no"} (pending care bonus: ${tile.pending_care_bonus})`);
+		lines.push(`Fertilizer available: ${tile.fertilizer_available ? "yes" : "no"}`);
+
+	} else if (tile.kind === "COOP" || tile.kind === "PASTURE") {
+
+		lines.push(`Empty ${tile.kind}.`);
+	}
+
+	let units = replay.units(index, pl);
+	let inventories = replay.inventories(index, pl);
+
+	for (let n = 0; n < units.length; n++) {
+		if (units[n][0] === x && units[n][1] === y) {
+			let label = (n === 0) ? "Farmer" : `Hand ${n}`;
+			lines.push(`${label} is here, carrying: ${itemlist(inventories[n] || {})}`);
+		}
+	}
+
+	tilebox.textContent = lines.join("\n");
+}
+
+
+
 module.exports = {
-	draw
+	draw,
+	draw_tile_info
 };
