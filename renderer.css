@@ -6,4 +6,15 @@ body {
 	margin: 1em;
 	padding: 0;
 	overflow: hidden;
+	font-family: Consolas, "Courier New", monospace;
+}
+
+canvas {
+	display: block;
+	margin: 0.5em 0;
+}
+
+#statusbox, #pricesbox, #shopsbox {
+	margin: 0.25em 0;
+	white-space: nowrap;
 }
