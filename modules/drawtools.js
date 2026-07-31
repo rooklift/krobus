@@ -339,12 +339,12 @@ function draw_tile_info(replay, index, pl, x, y) {
 	} else if (tile.kind === "PLANT") {
 
 		let age = day - tile.planted_day;
-		lines.push(`${tile.crop} plant, ${age} day${age === 1 ? "" : "s"} old.`);
+		lines.push(`${tile.crop} plant, ${age} day${age === 1 ? "" : "s"} old`);
 
 		let cd = CROPS[tile.crop];
 		if (cd && cd.ongoing) {
 			let base = `Yields every ${cd.interval} day${cd.interval === 1 ? "" : "s"} from age ${cd.first_yield_day}`;
-			lines.push(age < cd.first_yield_day ? `${base} (first in ${cd.first_yield_day - age}).` : `${base}.`);
+			lines.push(age < cd.first_yield_day ? `${base} (first in ${cd.first_yield_day - age})` : `${base}`);
 		}
 
 		if (cd) {
@@ -357,31 +357,31 @@ function draw_tile_info(replay, index, pl, x, y) {
 		if (cd && !cd.ongoing) {
 			let ws = Math.floor((cd.max_yield_day + 1) / 2);
 			let status = (age < ws) ? `opens in ${ws - age}` : ((age <= cd.max_yield_day) ? "open now" : "closed");
-			lines.push(`Watering window: age ${ws}-${cd.max_yield_day} (${status}).`);
+			lines.push(`Watering window: age ${ws}-${cd.max_yield_day} (${status})`);
 		}
 
 		lines.push(`Watered today: ${tile.watered_today ? "yes" : "no"}`)
 		lines.push(`Unwatered days: ${tile.consecutive_unwatered}`);
 
 		if (tile.fertilized_until_day >= day) {
-			lines.push(`Fertilized through day ${tile.fertilized_until_day}.`);
+			lines.push(`Fertilized through day ${tile.fertilized_until_day}`);
 		}
 
 		if (tile.max_lifespan_step >= 0) {
 			lines.push(index >= tile.max_lifespan_step ?
-					`Decaying since step ${tile.max_lifespan_step} (1 yield per 2 steps).` :
-					`Decays from step ${tile.max_lifespan_step}.`);
+					`Decaying since step ${tile.max_lifespan_step} (1 yield per 2 steps)` :
+					`Decays from step ${tile.max_lifespan_step}`);
 		}
 
 	} else if (tile.animal) {
 
 		let age = day - tile.placed_day;
-		lines.push(`${tile.animal} in ${tile.kind}, ${age} day${age === 1 ? "" : "s"} old.`);
+		lines.push(`${tile.animal} in ${tile.kind}, ${age} day${age === 1 ? "" : "s"} old`);
 
 		let ad = ANIMALS[tile.animal];
 		if (ad) {
 			let base = `Yields every ${ad.interval} day${ad.interval === 1 ? "" : "s"} from age ${ad.first_yield_day}`;
-			lines.push(age < ad.first_yield_day ? `${base} (first in ${ad.first_yield_day - age}).` : `${base}.`);
+			lines.push(age < ad.first_yield_day ? `${base} (first in ${ad.first_yield_day - age})` : `${base}`);
 		}
 
 		lines.push(`${ad ? ad.product : "Produce"} ready: ${tile.yield_units}` + (ad ? ` (max ${ad.max_held})` : ""));
@@ -391,7 +391,7 @@ function draw_tile_info(replay, index, pl, x, y) {
 
 	} else if (tile.kind === "COOP" || tile.kind === "PASTURE") {
 
-		lines.push(`Empty ${tile.kind}.`);
+		lines.push(`Empty ${tile.kind}`);
 	}
 
 	let units = replay.units(index, pl);
@@ -468,11 +468,11 @@ function draw_market_info(replay, index) {
 		}
 	}
 
-	shopstitle.textContent = `Daily demand (${shops.length} shop${shops.length !== 1 ? "s" : ""}):`;
+	shopstitle.textContent = `Daily demand: (${shops.length} shop${shops.length !== 1 ? "s" : ""})`;
 
 	let demand_entries = Object.entries(demand).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 	shopsbox.textContent = demand_entries.length > 0 ?
-			demand_entries.map(([item, n]) => item.padEnd(11) + `${n}`.padStart(3)).join("\n") :
+			demand_entries.map(([item, n]) => item.padEnd(11) + `${n}`.padStart(5)).join("\n") :
 			"(no shops open)";
 }
 

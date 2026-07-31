@@ -49,8 +49,8 @@ ipcRenderer.on("toggle", (event, msg) => {
 	hub.set(msg, !config[msg]);
 });
 
-document.getElementById("farmcols").addEventListener("click", (event) => {		// The per-player canvases within are created dynamically,
-	hub.click(event);															// so delegate from their container.
+document.addEventListener("click", (event) => {
+	hub.click(event);
 });
 
 // ------------------------------------------------------------------------------------------------

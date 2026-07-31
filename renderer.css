@@ -13,7 +13,7 @@ body {
 	display: flex;
 	flex-direction: column;
 	flex: 0 0 auto;
-	width: 25em;			/* Fixed so the right column doesn't shift as tile info comes and goes. */
+	width: 30em;			/* Fixed so the right column doesn't shift as tile info comes and goes. */
 }
 
 #marketpane {

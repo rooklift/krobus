@@ -25,7 +25,7 @@ exports.filepath = in_main_process ?
 global.config = {};
 
 exports.defaults = {
-	"width": 1200,
+	"width": 1380,
 	"height": 800,
 	"maxed": false,
 	"replay_folder": null,
