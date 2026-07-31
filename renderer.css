@@ -34,7 +34,7 @@ canvas {
 
 #tilebox {
 	white-space: pre;
-	margin: 0.25em 0;
+	margin: 0.25em 0.5em;
 	min-height: 8em;		/* Reserve space so the layout doesn't jump as tile info appears. */
 }
 
