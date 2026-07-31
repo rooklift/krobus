@@ -283,6 +283,7 @@ function draw_player_info(replay, index, pl, div) {
 
 	let lines = [
 		`${replay.team_name(pl)} -- $${Math.round(replay.money(index, pl))}`,
+		``,
 		`Shed ${shed_total}/${replay.shed_capacity()}: ${itemlist(shed)}`,
 		`Seeds: ${itemlist(replay.seeds(index, pl))}`,
 		`Carrying: ${itemlist(carried)}`,
@@ -290,9 +291,64 @@ function draw_player_info(replay, index, pl, div) {
 		`Animals: ${itemlist(animals)}` + (empty_pens > 0 ? ` (${empty_pens} empty pen${empty_pens === 1 ? "" : "s"})` : ""),
 	];
 
+	lines.push(``);
+	lines.push(...market_orders_strings(replay.market_orders(index, pl)));
+
 	div.style.paddingLeft = `${PAD}px`;
 	div.style.paddingRight = `${PAD}px`;
 	div.textContent = lines.join("\n");
+}
+
+const MARKET_OP_ORDER = ["HIRE", "BUY_LAND", "BUY_SEED", "BUY_ANIMAL", "BUY_PRODUCT", "SELL"];
+
+function market_orders_strings(orders) {
+
+	// Purely for display: merges duplicate orders (HIRE x4; summed SELL counts) and
+	// sorts them into a fixed rational order, though the engine ran them as given.
+	// Returns an array of display lines, empty if there were no orders.
+
+	let merged = new Map();
+
+	for (let o of orders) {
+		if (!Array.isArray(o) || o.length === 0) {
+			continue;
+		}
+		let op = o[0];
+		let key;
+		let entry;
+		if (op === "HIRE" || op === "BUY_LAND") {
+			key = op;
+			entry = merged.get(key) || {op: op, item: "", n: 0, tally: true};
+			entry.n += 1;
+		} else if (MARKET_OP_ORDER.includes(op) && o.length >= 2) {
+			key = `${op} ${o[1]}`;
+			entry = merged.get(key) || {op: op, item: `${o[1]}`, n: 0};
+			let n = parseInt(o[2], 10);
+			entry.n += Number.isFinite(n) ? n : 1;
+		} else {
+			key = o.join(" ");				// Unrecognised op: show verbatim, tallied if repeated.
+			entry = merged.get(key) || {op: key, item: "", n: 0, tally: true};
+			entry.n += 1;
+		}
+		merged.set(key, entry);
+	}
+
+	let entries = [...merged.values()];
+
+	entries.sort((a, b) => {
+		let ai = MARKET_OP_ORDER.indexOf(a.op);
+		let bi = MARKET_OP_ORDER.indexOf(b.op);
+		if (ai === -1) ai = MARKET_OP_ORDER.length;
+		if (bi === -1) bi = MARKET_OP_ORDER.length;
+		return (ai - bi) || a.item.localeCompare(b.item);
+	});
+
+	return entries.map(e => {
+		if (e.tally) {
+			return e.n > 1 ? `${e.op} x${e.n}` : e.op;
+		}
+		return `${e.op} ${e.item} ${e.n}`;
+	});
 }
 
 function itemlist(o) {

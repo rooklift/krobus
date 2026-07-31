@@ -71,6 +71,14 @@ const kaggle_replay_props = {
 		return this.r.steps[i][0].observation.town.unlocked_shops;
 	},
 
+	market_orders: function(i, pl) {	// Array of order arrays, e.g. ["SELL", "WHEAT", 20] or ["HIRE"]. These
+		let action = this.r.steps[i][pl].action;		// are the orders whose effects are already visible at step i.
+		if (typeof action !== "object" || action === null || !Array.isArray(action.market)) {
+			return [];
+		}
+		return action.market;
+	},
+
 	// Private data is per-player, on that player's own observation...
 
 	shed: function(i, pl) {				// Object of item --> count.
