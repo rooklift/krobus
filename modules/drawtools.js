@@ -234,7 +234,7 @@ function draw_units(ctx, units, ox, oy) {
 }
 
 function market_inv_to_str(n) {
-	let s = (10000 - n).toString();
+	let s = (n - 10000).toString();
 	if (s[0] !== "-") {
 		s = "+" + s;
 	}
