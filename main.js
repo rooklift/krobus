@@ -229,6 +229,77 @@ function menu_build() {
 				},
 			]
 		},
+		{
+			label: "View",
+			submenu: [
+				{
+					label: "Backward",
+					accelerator: "Up",
+					click: () => {
+						win.webContents.send("call", {
+							fn: "backward",
+							args: [1]
+						});
+					}
+				},
+				{
+					label: "Forward",
+					accelerator: "Down",
+					click: () => {
+						win.webContents.send("call", {
+							fn: "forward",
+							args: [1]
+						});
+					}
+				},
+				{
+					type: "separator",
+				},
+				{
+					label: "Backward 10",
+					accelerator: "PageUp",
+					click: () => {
+						win.webContents.send("call", {
+							fn: "backward",
+							args: [10]
+						});
+					}
+				},
+				{
+					label: "Forward 10",
+					accelerator: "PageDown",
+					click: () => {
+						win.webContents.send("call", {
+							fn: "forward",
+							args: [10]
+						});
+					}
+				},
+				{
+					type: "separator",
+				},
+				{
+					label: "Go to start",
+					accelerator: "Home",
+					click: () => {
+						win.webContents.send("call", {
+							fn: "backward",
+							args: [999999]
+						});
+					}
+				},
+				{
+					label: "Go to end",
+					accelerator: "End",
+					click: () => {
+						win.webContents.send("call", {
+							fn: "forward",
+							args: [999999]
+						});
+					}
+				},
+			]
+		}
 	];
 
 	return electron.Menu.buildFromTemplate(template);
