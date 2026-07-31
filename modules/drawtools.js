@@ -96,7 +96,9 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 		farmboxes.removeChild(farmboxes.lastChild);
 	}
 	while (farmboxes.children.length < players) {
-		farmboxes.appendChild(document.createElement("div"));
+		let d = document.createElement("div");
+		d.classList.add("farmbox");
+		farmboxes.appendChild(d);
 	}
 	farmboxes.style.paddingLeft = `${PAD}px`;
 	farmboxes.style.gap = `${BOARD_GAP}px`;
