@@ -301,6 +301,7 @@ function draw_player_info(replay, index, pl, div) {
 		`Shed ${shed_total}/${replay.shed_capacity()}: ${itemlist(shed)}`,
 		`Seeds: ${itemlist(replay.seeds(index, pl))}`,
 		`Carrying: ${itemlist(carried)}`,
+		``,
 		`Growing: ${itemlist(crops)}` + (weeds > 0 ? ` (${weeds} weed${weeds === 1 ? "" : "s"})` : ""),
 		`Animals: ${itemlist(animals)}` + (empty_pens > 0 ? ` (${empty_pens} empty pen${empty_pens === 1 ? "" : "s"})` : ""),
 	];
