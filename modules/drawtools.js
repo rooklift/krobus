@@ -54,7 +54,7 @@ const BACKGROUND_COLOURS = {
 	pasture: "#5c6e46",
 };
 
-function draw(replay, index) {
+function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 
 	let canvas = document.getElementById("canvas");
 	let ctx = canvas.getContext("2d");
@@ -100,6 +100,20 @@ function draw(replay, index) {
 		draw_board(ctx, replay.tiles(index, pl), bs, day, ox, oy);
 		draw_units(ctx, replay.units(index, pl), ox, oy);
 		draw_player_info(ctx, replay, index, pl, ox, oy + board_px + 6, board_px);
+	}
+
+	if (Array.isArray(selection) && selection[0] >= 0 && selection[0] < players) {
+		let [sel_pl, sel_x, sel_y] = selection;
+		if (sel_x >= 0 && sel_x < bs && sel_y >= 0 && sel_y < bs) {
+			let ox = PAD + sel_pl * (board_px + BOARD_GAP);
+			let oy = PAD + HEADER_HEIGHT;
+			ctx.strokeStyle = "#ffffff";
+			ctx.lineWidth = 2;
+			ctx.strokeRect(ox + sel_x * TILE_SIZE + 1, oy + sel_y * TILE_SIZE + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+		}
+		draw_tile_info(replay, index, sel_pl, sel_x, sel_y);
+	} else {
+		document.getElementById("tilebox").textContent = "";
 	}
 
 	markettitle.textContent = "Market";
@@ -333,10 +347,33 @@ function market_inv_to_str(n, equilibrium) {
 
 
 
+function tile_at_point(replay, cx, cy) {
+
+	// Inverts the board layout: canvas pixel coords --> [player, x, y], or null if
+	// the point isn't on a tile. For use with event.offsetX / event.offsetY.
+
+	if (!replay) {
+		return null;
+	}
+
+	let bs = replay.board_size();
+	let board_px = bs * TILE_SIZE;
+
+	for (let pl = 0; pl < replay.num_players(); pl++) {
+		let x = Math.floor((cx - (PAD + pl * (board_px + BOARD_GAP))) / TILE_SIZE);
+		let y = Math.floor((cy - (PAD + HEADER_HEIGHT)) / TILE_SIZE);
+		if (x >= 0 && x < bs && y >= 0 && y < bs) {
+			return [pl, x, y];
+		}
+	}
+
+	return null;
+}
+
 function draw_tile_info(replay, index, pl, x, y) {
 
 	// Writes everything knowable about one tile (and anyone standing on it) into the
-	// tilebox. Not called by draw() -- the hub should call it on mouseover / click.
+	// tilebox. draw() calls this with the current selection.
 
 	let tilebox = document.getElementById("tilebox");
 
@@ -415,5 +452,6 @@ function draw_tile_info(replay, index, pl, x, y) {
 
 module.exports = {
 	draw,
-	draw_tile_info
+	draw_tile_info,
+	tile_at_point
 };

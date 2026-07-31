@@ -22,6 +22,7 @@ let hub_main_props = {
 	reset: function() {
 		this.replay = null;
 		this.index = 0;
+		this.selection = null;
 	},
 
 	quit: function() {
@@ -55,6 +56,7 @@ let hub_main_props = {
 		try {
 			this.replay = replay_kaggle.load(o);
 			this.index = 0;
+			this.selection = null;
 		} catch (err) {
 			alert(err);
 			return;
@@ -65,7 +67,7 @@ let hub_main_props = {
 	},
 
 	draw: function() {
-		drawtools.draw(this.replay, this.index);
+		drawtools.draw(this.replay, this.index, this.selection);
 	},
 
 	backward(n) {
@@ -75,6 +77,16 @@ let hub_main_props = {
 
 	forward(n) {
 		this.index = Math.min(this.replay.length() - 1, this.index + n);
+		this.draw();
+	},
+
+	click(event) {
+		let selection = drawtools.tile_at_point(this.replay, event.offsetX, event.offsetY);
+		if (selection && this.selection &&
+				selection[0] === this.selection[0] && selection[1] === this.selection[1] && selection[2] === this.selection[2]) {
+			selection = null;											// Clicking the selected tile deselects it.
+		}
+		this.selection = selection;										// [player, x, y], or null.
 		this.draw();
 	},
 

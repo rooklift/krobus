@@ -49,6 +49,12 @@ ipcRenderer.on("toggle", (event, msg) => {
 	hub.set(msg, !config[msg]);
 });
 
+document.getElementById("canvas").addEventListener("click", (event) => {
+	hub.click(event);
+});
+
+// ------------------------------------------------------------------------------------------------
+
 ipcRenderer.on("call", (event, msg) => {
 	let fn;
 	if (typeof msg === "string") {																		// msg is function name
