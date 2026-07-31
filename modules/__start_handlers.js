@@ -1,12 +1,41 @@
 "use strict";
 
-const {ipcRenderer} = require("electron");
+const {ipcRenderer, webUtils} = require("electron");		// webUtils might not actually exist, depending on version. Don't use it directly.
+
+const get_path_for_file = (webUtils && webUtils.getPathForFile) ? webUtils.getPathForFile : file => file.path;
 
 // Uncaught exceptions should trigger an alert (once only)...
 
 window.addEventListener("error", (event) => {
 	alert("An uncaught exception happened in the renderer process. See the dev console for details. The app might now be in a bad state.");
 }, {once: true});
+
+// ------------------------------------------------------------------------------------------------
+
+window.addEventListener("dragenter", (event) => {		// Necessary to prevent brief flashes of "not allowed" icon.
+	event.preventDefault();
+});
+
+window.addEventListener("dragover", (event) => {		// Necessary to prevent always having the "not allowed" icon.
+	event.preventDefault();
+});
+
+window.addEventListener("drop", (event) => {
+	console.log(0);
+	event.preventDefault();
+	let files = [];
+	if (event.dataTransfer && event.dataTransfer.files) {
+		console.log(1);
+		for (let file of event.dataTransfer.files) {
+			console.log(2);
+			if (get_path_for_file(file)) {
+				console.log(3);
+				hub.load_replay(get_path_for_file(file));
+				break;
+			}
+		}
+	}
+});
 
 // ------------------------------------------------------------------------------------------------
 
@@ -33,3 +62,4 @@ ipcRenderer.on("call", (event, msg) => {
 		console.log(msg);
 	}
 });
+
