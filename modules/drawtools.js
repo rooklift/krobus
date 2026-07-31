@@ -94,7 +94,7 @@ function draw(replay, index) {
 	}
 
 	markettitle.textContent = "Market";
-	statusbox.textContent = `Step ${index + 1} / ${replay.length()}\nDay ${day}, Hour ${replay.hour(index)}`;
+	statusbox.textContent = `Step ${index} / ${replay.length()}\nDay ${day}, Hour ${replay.hour(index)}`;
 
 	let prices = replay.prices(index);
 	let market_inv = replay.market_inventory(index);
