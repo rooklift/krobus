@@ -419,9 +419,9 @@ function draw_tile_info(replay, index, pl, x, y) {
 
 		lines.push(`${tile.animal} in ${tile.kind}, placed day ${tile.placed_day} (${day - tile.placed_day} days old).`);
 		lines.push(`${ANIMAL_PRODUCTS[tile.animal] || "Produce"} ready: ${tile.yield_units}`);
-		lines.push(`Fed today: ${tile.fed_today ? "yes" : "no"} (consecutive unfed days: ${tile.consecutive_unfed})`);
-		lines.push(`Cared for today: ${tile.cared_today ? "yes" : "no"} (pending care bonus: ${tile.pending_care_bonus})`);
-		lines.push(`Fertilizer available: ${tile.fertilizer_available ? "yes" : "no"}`);
+		lines.push(`Fed: ${tile.fed_today ? "yes" : "no"} (unfed days: ${tile.consecutive_unfed})`);
+		lines.push(`Cared: ${tile.cared_today ? "yes" : "no"} (pending bonus: ${tile.pending_care_bonus})`);
+		lines.push(`Fertilizer: ${tile.fertilizer_available ? "yes" : "no"}`);
 
 	} else if (tile.kind === "COOP" || tile.kind === "PASTURE") {
 
