@@ -32,12 +32,14 @@ const SHOPS = {
 
 const TOWN_CENTER_DEMAND_SCHEDULE = [[20, 4], [10, 2], [0, 1]];
 
-// Also copied from the runner, for tile info display.
+// Animal parameters, in days-of-age; also copied from the runner. Base production
+// accrues on schedule regardless of feeding -- feeding only prevents escape (2
+// consecutive unfed days) and enables the care bonus. No decay or expiry.
 
-const ANIMAL_PRODUCTS = {
-	GOOSE: "EGG",
-	COW:   "MILK",
-	SHEEP: "WOOL",
+const ANIMALS = {
+	GOOSE: {product: "EGG",  first_yield_day: 4, interval: 1, max_held: 4},
+	COW:   {product: "MILK", first_yield_day: 8, interval: 2, max_held: 6},
+	SHEEP: {product: "WOOL", first_yield_day: 6, interval: 3, max_held: 6},
 };
 
 // Crop lifecycle parameters, in days-of-age; likewise copied from the runner. One-shot
@@ -474,16 +476,16 @@ function draw_tile_info(replay, index, pl, x, y) {
 		let cd = CROPS[tile.crop];
 		if (cd) {
 			if (cd.ongoing) {
-				let base = `Yields every ${cd.interval} day${cd.interval === 1 ? "" : "s"} from day ${cd.first_yield_day}`;
-				lines.push(age < cd.first_yield_day ? `${base} (first in ${cd.first_yield_day - age}).` : `${base} (max ${cd.max_yield} held).`);
+				let base = `Yields every ${cd.interval} day${cd.interval === 1 ? "" : "s"} from age ${cd.first_yield_day}`;
+				lines.push(age < cd.first_yield_day ? `${base} (first in ${cd.first_yield_day - age}).` : `${base}.`);
 			} else {
 				let ws = Math.floor((cd.max_yield_day + 1) / 2);
 				let status = (age < ws) ? `opens in ${ws - age}` : ((age <= cd.max_yield_day) ? "open now" : "closed");
-				lines.push(`Watering window: days ${ws}-${cd.max_yield_day} (${status}).`);
+				lines.push(`Watering window: age ${ws}-${cd.max_yield_day} (${status}).`);
 			}
 		}
 
-		lines.push(`Yield ready: ${tile.yield_units}`);
+		lines.push(`Yield ready: ${tile.yield_units}` + (cd ? ` (max ${cd.max_yield})` : ""));
 		lines.push(`Watered today: ${tile.watered_today ? "yes" : "no"}`)
 		lines.push(`Unwatered days: ${tile.consecutive_unwatered}`);
 
@@ -499,8 +501,16 @@ function draw_tile_info(replay, index, pl, x, y) {
 
 	} else if (tile.animal) {
 
-		lines.push(`${tile.animal} in ${tile.kind}, placed day ${tile.placed_day} (${day - tile.placed_day} days old).`);
-		lines.push(`${ANIMAL_PRODUCTS[tile.animal] || "Produce"} ready: ${tile.yield_units}`);
+		let age = day - tile.placed_day;
+		lines.push(`${tile.animal} in ${tile.kind}, ${age} day${age === 1 ? "" : "s"} old.`);
+
+		let ad = ANIMALS[tile.animal];
+		if (ad) {
+			let base = `Yields every ${ad.interval} day${ad.interval === 1 ? "" : "s"} from age ${ad.first_yield_day}`;
+			lines.push(age < ad.first_yield_day ? `${base} (first in ${ad.first_yield_day - age}).` : `${base}.`);
+		}
+
+		lines.push(`${ad ? ad.product : "Produce"} ready: ${tile.yield_units}` + (ad ? ` (max ${ad.max_held})` : ""));
 		lines.push(`Fed: ${tile.fed_today ? "yes" : "no"} (unfed days: ${tile.consecutive_unfed})`);
 		lines.push(`Cared: ${tile.cared_today ? "yes" : "no"} (pending bonus: ${tile.pending_care_bonus})`);
 		lines.push(`Fertilizer: ${tile.fertilizer_available ? "yes" : "no"}`);
