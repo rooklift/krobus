@@ -71,11 +71,17 @@ let hub_main_props = {
 	},
 
 	backward(n) {
+		if (!this.replay) {
+			return;
+		}
 		this.index = Math.max(0, this.index - n);
 		this.draw();
 	},
 
 	forward(n) {
+		if (!this.replay) {
+			return;
+		}
 		this.index = Math.min(this.replay.length() - 1, this.index + n);
 		this.draw();
 	},
