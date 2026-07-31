@@ -440,7 +440,7 @@ function draw_tile_info(replay, index, pl, x, y) {
 	let day = replay.day(index);
 	let tile = replay.tiles(index, pl)[y][x];
 
-	let lines = [`${replay.team_name(pl)} -- tile [${x}, ${y}]`];
+	let lines = [`${replay.team_name(pl)} -- tile [${x}, ${y}]`, ``];
 
 	if (tile === "LOCKED") {
 
@@ -458,7 +458,7 @@ function draw_tile_info(replay, index, pl, x, y) {
 
 		lines.push(`${tile.crop} plant, planted day ${tile.planted_day} (${day - tile.planted_day} days old).`);
 		lines.push(`Yield ready: ${tile.yield_units}`);
-		lines.push(`Watered today: ${tile.watered_today ? "yes" : "no"} (consecutive unwatered days: ${tile.consecutive_unwatered})`);
+		lines.push(`Watered today: ${tile.watered_today ? "yes" : "no"} (unwatered days: ${tile.consecutive_unwatered})`);
 
 		if (tile.fertilized_until_day >= day) {
 			lines.push(`Fertilized through day ${tile.fertilized_until_day}.`);
@@ -485,11 +485,16 @@ function draw_tile_info(replay, index, pl, x, y) {
 
 	let units = replay.units(index, pl);
 	let inventories = replay.inventories(index, pl);
+	let pushed_gap = false;
 
 	for (let n = 0; n < units.length; n++) {
 		if (units[n][0] === x && units[n][1] === y) {
+			if (!pushed_gap) {
+				lines.push(``);
+				pushed_gap = true;
+			}
 			let label = (n === 0) ? "Farmer" : `Hand ${n}`;
-			lines.push(`${label} is here, carrying: ${itemlist(inventories[n] || {})}`);
+			lines.push(`${label} carrying: ${itemlist(inventories[n] || {})}`);
 		}
 	}
 
