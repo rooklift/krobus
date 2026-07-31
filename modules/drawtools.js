@@ -68,20 +68,13 @@ const MARKET_OP_ORDER = ["HIRE", "BUY_LAND", "BUY_SEED", "BUY_ANIMAL", "BUY_PROD
 function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 
 	let statusbox = document.getElementById("statusbox");
-	let markettitle = document.getElementById("markettitle");
-	let pricesbox = document.getElementById("pricesbox");
-	let shopstitle = document.getElementById("shopstitle");
-	let shopsbox = document.getElementById("shopsbox");
 	let farmcols = document.getElementById("farmcols");
 
 	if (!replay) {
 		statusbox.textContent = "";
-		markettitle.textContent = "";
-		pricesbox.textContent = "";
-		shopstitle.textContent = "";
-		shopsbox.textContent = "";
 		farmcols.textContent = "";			// Also deletes the per-player columns.
 		document.getElementById("tilebox").textContent = "";
+		draw_market_info(null, 0);
 		return;
 	}
 
@@ -143,48 +136,9 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 		document.getElementById("tilebox").textContent = "";
 	}
 
-	markettitle.textContent = "Market";
 	statusbox.textContent = `Step ${index} / ${replay.length()}\nDay ${day}, Hour ${replay.hour(index)}`;
 
-	let prices = replay.prices(index);
-	let market_inv = replay.market_inventory(index);
-
-	let entries = Object.entries(prices).map(([item, price]) => {
-		let eq = replay.equilibrium(item);
-		return {item, price, eq, ratio: (market_inv[item] - eq) / eq};
-	});
-	entries.sort((a, b) => a.ratio - b.ratio);		// Scarcest first, most glutted last.
-
-	pricesbox.textContent = entries.map(e => {
-		return e.item.padEnd(11) + `$${e.price}`.padStart(5) + market_inv_to_str(market_inv[e.item], e.eq).padStart(8) + " stored";
-	}).join("\n");
-
-	let shops = replay.shops(index);
-	let ticks_per_day = Math.floor(replay.turns_per_day() / replay.shop_sell_interval());
-
-	let demand = {};
-	for (let name of shops) {
-		let products = SHOPS[name] || [];
-		let mult = (products.length === 1) ? 2 : 1;
-		for (let item of products) {
-			demand[item] = (demand[item] || 0) + mult * ticks_per_day;
-		}
-	}
-
-	let center_ticks = Math.floor(replay.turns_per_day() / replay.town_center_sell_interval());
-	let center_mult = TOWN_CENTER_DEMAND_SCHEDULE.find(([threshold, mult]) => day >= threshold)[1];
-	for (let item of Object.keys(prices)) {
-		if (item !== "FERTILIZER") {
-			demand[item] = (demand[item] || 0) + center_mult * center_ticks;
-		}
-	}
-
-	shopstitle.textContent = `Daily demand (${shops.length} shop${shops.length !== 1 ? "s" : ""})`;
-
-	let demand_entries = Object.entries(demand).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-	shopsbox.textContent = demand_entries.length > 0 ?
-			demand_entries.map(([item, n]) => item.padEnd(11) + `${n}`.padStart(3)).join("\n") :
-			"(no shops open)";
+	draw_market_info(replay, index);
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -451,6 +405,69 @@ function draw_tile_info(replay, index, pl, x, y) {
 	}
 
 	tilebox.textContent = lines.join("\n");
+}
+
+function draw_market_info(replay, index) {
+
+	// The market pane: current prices with stored amounts relative to equilibrium
+	// (scarcest first), then the town's pooled daily demand. Clears if no replay.
+
+	let markettitle = document.getElementById("markettitle");
+	let pricesbox = document.getElementById("pricesbox");
+	let shopstitle = document.getElementById("shopstitle");
+	let shopsbox = document.getElementById("shopsbox");
+
+	if (!replay) {
+		markettitle.textContent = "";
+		pricesbox.textContent = "";
+		shopstitle.textContent = "";
+		shopsbox.textContent = "";
+		return;
+	}
+
+	let day = replay.day(index);
+
+	markettitle.textContent = "Market";
+
+	let prices = replay.prices(index);
+	let market_inv = replay.market_inventory(index);
+
+	let entries = Object.entries(prices).map(([item, price]) => {
+		let eq = replay.equilibrium(item);
+		return {item, price, eq, ratio: (market_inv[item] - eq) / eq};
+	});
+	entries.sort((a, b) => a.ratio - b.ratio);		// Scarcest first, most glutted last.
+
+	pricesbox.textContent = entries.map(e => {
+		return e.item.padEnd(11) + `$${e.price}`.padStart(5) + market_inv_to_str(market_inv[e.item], e.eq).padStart(8) + " stored";
+	}).join("\n");
+
+	let shops = replay.shops(index);
+	let ticks_per_day = Math.floor(replay.turns_per_day() / replay.shop_sell_interval());
+
+	let demand = {};
+	for (let name of shops) {
+		let products = SHOPS[name] || [];
+		let mult = (products.length === 1) ? 2 : 1;
+		for (let item of products) {
+			demand[item] = (demand[item] || 0) + mult * ticks_per_day;
+		}
+	}
+
+	let center_ticks = Math.floor(replay.turns_per_day() / replay.town_center_sell_interval());
+	let center_mult = TOWN_CENTER_DEMAND_SCHEDULE.find(([threshold, mult]) => day >= threshold)[1];
+	for (let item of Object.keys(prices)) {
+		if (item !== "FERTILIZER") {
+			demand[item] = (demand[item] || 0) + center_mult * center_ticks;
+		}
+	}
+
+	shopstitle.textContent = `Daily demand (${shops.length} shop${shops.length !== 1 ? "s" : ""})`;
+
+	let demand_entries = Object.entries(demand).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+	shopsbox.textContent = demand_entries.length > 0 ?
+			demand_entries.map(([item, n]) => item.padEnd(11) + `${n}`.padStart(3)).join("\n") :
+			"(no shops open)";
 }
 
 // ------------------------------------------------------------------------------------------------
