@@ -1,5 +1,5 @@
 body {
-	background-color: #2a2a2a;		/* Must match BACKGROUND_COLOURS.canvas in drawtools.js. */
+	background-color: #1f1f1f;		/* Must match BACKGROUND_COLOURS.canvas in drawtools.js. */
 	color: #efefef;
 	height: 100vh;
 	margin: 0;

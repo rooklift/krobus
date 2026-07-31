@@ -53,8 +53,8 @@ const CROPS = {
 };
 
 const BACKGROUND_COLOURS = {
-	canvas:  "#2a2a2a",
-	locked:  "#1e1e1e",
+	canvas:  "#1f1f1f",
+	locked:  "#181818",
 	soil:    "#5a4023",
 	plant:   "#2f5d31",
 	coop:    "#7b6144",
@@ -285,9 +285,11 @@ function draw_player_info(replay, index, pl, div) {
 	let lines = [
 		`${replay.team_name(pl)} -- $${Math.round(replay.money(index, pl))}`,
 		``,
-		`Shed ${shed_total}/${replay.shed_capacity()}: ${itemlist(shed)}`,
-		`Seeds: ${itemlist(replay.seeds(index, pl))}`,
-		`Carrying: ${itemlist(carried)}`,
+		`Shed usage: ${shed_total}/${replay.shed_capacity()}`,
+		``,
+		`Shed: ${itemlist(shed)}`,
+		`Seed: ${itemlist(replay.seeds(index, pl))}`,
+		`Held: ${itemlist(carried)}`,
 		``,
 		`Growing: ${itemlist(crops)}` + (weeds > 0 ? ` (${weeds} weed${weeds === 1 ? "" : "s"})` : ""),
 		`Animals: ${itemlist(animals)}` + (empty_pens > 0 ? ` (${empty_pens} empty pen${empty_pens === 1 ? "" : "s"})` : ""),
@@ -320,7 +322,7 @@ function draw_tile_info(replay, index, pl, x, y) {
 	let day = replay.day(index);
 	let tile = replay.tiles(index, pl)[y][x];
 
-	let lines = [`${replay.team_name(pl)} -- tile [${x}, ${y}]`, ``];
+	let lines = [`${replay.team_name(pl)} [${x}, ${y}]`, ``];
 
 	if (tile === "LOCKED") {
 
@@ -425,7 +427,7 @@ function draw_market_info(replay, index) {
 
 	let day = replay.day(index);
 
-	markettitle.textContent = "Market";
+	markettitle.textContent = "Market:";
 
 	let prices = replay.prices(index);
 	let market_inv = replay.market_inventory(index);
@@ -460,7 +462,7 @@ function draw_market_info(replay, index) {
 		}
 	}
 
-	shopstitle.textContent = `Daily demand (${shops.length} shop${shops.length !== 1 ? "s" : ""})`;
+	shopstitle.textContent = `Daily demand (${shops.length} shop${shops.length !== 1 ? "s" : ""}):`;
 
 	let demand_entries = Object.entries(demand).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 	shopsbox.textContent = demand_entries.length > 0 ?
