@@ -32,7 +32,18 @@ canvas {
 	margin-top: 1.25em;
 }
 
+#farmboxes {
+	display: flex;		/* Child divs are created by drawtools, one per player, sized to sit under the boards. */
+}
+
+#farmboxes div {
+	white-space: pre-wrap;
+	margin: 0.25em 0;
+	min-height: 8em;	/* Reserve some wrapping slack so the tilebox below doesn't jump while stepping. */
+}
+
 #tilebox {
+	background-color: #222222;
 	white-space: pre;
 	margin: 0.25em 0.5em;
 	min-height: 8em;		/* Reserve space so the layout doesn't jump as tile info appears. */

@@ -6,9 +6,6 @@ const TILE_SIZE = 36;
 const PAD = 8;
 const BOARD_GAP = 48;
 const HEADER_HEIGHT = 24;
-const FOOTER_LINE_HEIGHT = 16;
-const FOOTER_LINES = 5;
-const FOOTER_HEIGHT = 6 + FOOTER_LINES * FOOTER_LINE_HEIGHT;
 
 const CROP_COLOURS = {
 	WHEAT:      "#d4b84a",
@@ -72,6 +69,7 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 		pricesbox.textContent = "";
 		shopstitle.textContent = "";
 		shopsbox.textContent = "";
+		document.getElementById("farmboxes").textContent = "";		// Also deletes the per-player child divs.
 		document.getElementById("tilebox").textContent = "";
 		return;
 	}
@@ -81,7 +79,7 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 	let board_px = bs * TILE_SIZE;
 
 	let want_width = PAD * 2 + players * board_px + (players - 1) * BOARD_GAP;
-	let want_height = PAD * 2 + HEADER_HEIGHT + board_px + FOOTER_HEIGHT;
+	let want_height = PAD * 2 + HEADER_HEIGHT + board_px;
 
 	if (canvas.width !== want_width || canvas.height !== want_height) {
 		canvas.width = want_width;
@@ -93,13 +91,23 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 
 	let day = replay.day(index);
 
+	let farmboxes = document.getElementById("farmboxes");
+	while (farmboxes.children.length > players) {
+		farmboxes.removeChild(farmboxes.lastChild);
+	}
+	while (farmboxes.children.length < players) {
+		farmboxes.appendChild(document.createElement("div"));
+	}
+	farmboxes.style.paddingLeft = `${PAD}px`;
+	farmboxes.style.gap = `${BOARD_GAP}px`;
+
 	for (let pl = 0; pl < players; pl++) {
 		let ox = PAD + pl * (board_px + BOARD_GAP);
 		let oy = PAD + HEADER_HEIGHT;
 		draw_header(ctx, replay, index, pl, ox, PAD);
 		draw_board(ctx, replay.tiles(index, pl), bs, day, ox, oy);
 		draw_units(ctx, replay.units(index, pl), ox, oy);
-		draw_player_info(ctx, replay, index, pl, ox, oy + board_px + 6, board_px);
+		draw_player_info(replay, index, pl, farmboxes.children[pl], board_px);
 	}
 
 	if (Array.isArray(selection) && selection[0] >= 0 && selection[0] < players) {
@@ -240,10 +248,11 @@ function draw_tile(ctx, tile, day, px, py) {
 	}
 }
 
-function draw_player_info(ctx, replay, index, pl, x, y, max_width) {
+function draw_player_info(replay, index, pl, div, width) {
 
-	// Shed, seeds, and carried items. Carried items live in per-unit inventories
-	// which we aggregate; they auto-drop to the shed at end of day anyway.
+	// Shed, seeds, and carried items, as text in the player's div below the canvas.
+	// Carried items live in per-unit inventories which we aggregate; they auto-drop
+	// to the shed at end of day anyway.
 
 	let shed = replay.shed(index, pl);
 	let shed_total = Object.values(shed).reduce((a, b) => a + b, 0);
@@ -285,29 +294,13 @@ function draw_player_info(ctx, replay, index, pl, x, y, max_width) {
 		`Animals: ${itemlist(animals)}` + (empty_pens > 0 ? ` (${empty_pens} empty pen${empty_pens === 1 ? "" : "s"})` : ""),
 	];
 
-	ctx.font = "12px Consolas, monospace";
-	ctx.textAlign = "left";
-	ctx.textBaseline = "top";
-	ctx.fillStyle = "#cccccc";
-
-	for (let n = 0; n < lines.length; n++) {
-		ctx.fillText(fit_text(ctx, lines[n], max_width), x, y + n * FOOTER_LINE_HEIGHT);
-	}
+	div.style.width = `${width}px`;
+	div.textContent = lines.join("\n");
 }
 
 function itemlist(o) {
 	let parts = Object.entries(o).filter(([item, n]) => n > 0).map(([item, n]) => `${item} ${n}`);
 	return parts.length > 0 ? parts.join(", ") : "-";
-}
-
-function fit_text(ctx, text, max_width) {
-	if (ctx.measureText(text).width <= max_width) {
-		return text;
-	}
-	while (text.length > 1 && ctx.measureText(text + "…").width > max_width) {
-		text = text.slice(0, -1);
-	}
-	return text + "…";
 }
 
 function draw_units(ctx, units, ox, oy) {
