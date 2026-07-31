@@ -151,7 +151,7 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 		ctx.fillRect(0, 0, cv.width, cv.height);
 
 		draw_board(ctx, replay.tiles(index, pl), bs, day, PAD, PAD);
-		draw_units(ctx, replay.units(index, pl), PAD, PAD);
+		draw_units(ctx, replay.units(index, pl), replay.unit_moves(index, pl), PAD, PAD);
 
 		if (Array.isArray(selection) && selection[0] === pl &&
 				selection[1] >= 0 && selection[1] < bs && selection[2] >= 0 && selection[2] < bs) {
@@ -228,7 +228,7 @@ function draw_tile(ctx, tile, day, px, py) {
 
 	if (fertilized) {
 		ctx.fillStyle = "#c86bd8";
-		ctx.fillRect(px + 3, py + 3, 5, 5);
+		ctx.fillRect(px + 3, py + TILE_SIZE - 8, 5, 5);		// Bottom-left; units cluster from the top-left.
 	}
 
 	if (letter) {
@@ -248,11 +248,13 @@ function draw_tile(ctx, tile, day, px, py) {
 	}
 }
 
-function draw_units(ctx, units, ox, oy) {
+function draw_units(ctx, units, moves, ox, oy) {
 
 	// Units on the same tile are offset into a small cluster so all remain visible.
+	// A unit about to move is drawn as a triangle pointing its way instead of a circle.
+	// Centre comes last so the tile's letter stays uncovered when possible.
 
-	const offsets = [[0, 0], [-0.22, -0.22], [0.22, -0.22], [-0.22, 0.22], [0.22, 0.22]];
+	const offsets = [[-0.22, -0.22], [0.22, -0.22], [-0.22, 0.22], [0.22, 0.22], [0, 0]];
 
 	let seen_at = {};
 
@@ -264,15 +266,35 @@ function draw_units(ctx, units, ox, oy) {
 		let [dx, dy] = offsets[stack % offsets.length];
 		let cx = ox + (x + 0.5 + dx) * TILE_SIZE;
 		let cy = oy + (y + 0.5 + dy) * TILE_SIZE;
-		let radius = (n === 0) ? TILE_SIZE * 0.2 : TILE_SIZE * 0.14;
+		let radius = TILE_SIZE * 0.14;		// The farmer (n === 0) is only special in being permanent; the yellow fill marks him.
 		ctx.beginPath();
-		ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+		if (moves[n]) {
+			unit_triangle_path(ctx, cx, cy, moves[n][0], moves[n][1], radius);
+		} else {
+			ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+		}
 		ctx.fillStyle = (n === 0) ? "#ffe066" : "#f0f0f0";
 		ctx.fill();
 		ctx.strokeStyle = "#222222";
 		ctx.lineWidth = 1.5;
 		ctx.stroke();
 	}
+}
+
+function unit_triangle_path(ctx, cx, cy, dx, dy, r) {
+
+	// An equilateral triangle pointing in (dx, dy), sized to have the same area as the
+	// radius-r circle a stationary unit gets: pi * r^2 == (3 * sqrt(3) / 4) * R^2 for
+	// circumradius R, giving R == r * 1.5551.
+
+	let R = r * 1.5551;
+	let px = -dy;		// Perpendicular.
+	let py = dx;
+
+	ctx.moveTo(cx + dx * R, cy + dy * R);
+	ctx.lineTo(cx - dx * R * 0.5 + px * R * 0.866, cy - dy * R * 0.5 + py * R * 0.866);
+	ctx.lineTo(cx - dx * R * 0.5 - px * R * 0.866, cy - dy * R * 0.5 - py * R * 0.866);
+	ctx.closePath();
 }
 
 // ------------------------------------------------------------------------------------------------

@@ -1,5 +1,12 @@
 "use strict";
 
+const FARMER_MOVES = {			// Copied from the runner. y grows downward.
+	NORTH: [0, -1],
+	SOUTH: [0, 1],
+	EAST:  [1, 0],
+	WEST:  [-1, 0],
+};
+
 function load(o) {					// Where o is an object already decoded from JSON.
 	if (!Array.isArray(o.steps) || o.steps.length === 0 || !Array.isArray(o.steps[0])) {
 		throw new Error("This does not appear to be a Kaggle replay (no steps).");
@@ -69,6 +76,46 @@ const kaggle_replay_props = {
 
 	shops: function(i) {				// Array of unlocked shop names.
 		return this.r.steps[i][0].observation.town.unlocked_shops;
+	},
+
+	unit_moves: function(i, pl) {
+
+		// For each unit at step i (main farmer first, matching units()), the [dx, dy] it
+		// is about to move -- i.e. its move order between this step and the next -- or
+		// null if it isn't moving. Move orders that will fail (board edge, locked tile)
+		// are null too, as is everything at the final step.
+
+		let units = this.units(i, pl);
+		let ret = units.map(() => null);
+
+		if (i + 1 >= this.length()) {
+			return ret;
+		}
+
+		let action = this.r.steps[i + 1][pl].action;
+		if (typeof action !== "object" || action === null) {
+			return ret;
+		}
+
+		let unit_actions = [action.farmer].concat(Array.isArray(action.hands) ? action.hands : []);
+		let tiles = this.tiles(i, pl);
+		let bs = this.board_size();
+
+		for (let n = 0; n < ret.length && n < unit_actions.length; n++) {
+			let a = unit_actions[n];
+			if (!Array.isArray(a) || !FARMER_MOVES.hasOwnProperty(a[0])) {
+				continue;
+			}
+			let [dx, dy] = FARMER_MOVES[a[0]];
+			let nx = units[n][0] + dx;
+			let ny = units[n][1] + dy;
+			if (nx < 0 || nx >= bs || ny < 0 || ny >= bs || tiles[ny][nx] === "LOCKED") {
+				continue;
+			}
+			ret[n] = [dx, dy];
+		}
+
+		return ret;
 	},
 
 	market_orders: function(i, pl) {	// Array of order arrays, e.g. ["SELL", "WHEAT", 20] or ["HIRE"]. These
