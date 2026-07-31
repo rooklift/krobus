@@ -54,9 +54,9 @@ let hub_main_props = {
 		}
 
 		try {
-			this.replay = replay_kaggle.load(o);
-			this.index = 0;
-			this.selection = null;
+			let replay = replay_kaggle.load(o);
+			this.reset();
+			this.replay = replay;
 		} catch (err) {
 			alert(err);
 			return;
