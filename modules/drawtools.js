@@ -160,7 +160,7 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 		}
 	}
 
-	shopstitle.textContent = `Town demand / day (${shops.length}/${Object.keys(SHOPS).length} shops open)`;
+	shopstitle.textContent = `Daily demand (${shops.length} shop${shops.length !== 1 ? "s" : ""})`;
 
 	let demand_entries = Object.entries(demand).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 	shopsbox.textContent = demand_entries.length > 0 ?
