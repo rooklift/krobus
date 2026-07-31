@@ -63,6 +63,25 @@ const kaggle_replay_props = {
 		return this.r.steps[i][0].observation.town.unlocked_shops;
 	},
 
+	// Private data is per-player, on that player's own observation...
+
+	shed: function(i, pl) {				// Object of item --> count.
+		return this.r.steps[i][pl].observation.private.shed;
+	},
+
+	shed_capacity: function() {
+		let cap = this.r.configuration.shedCapacity;
+		return (typeof cap === "number") ? cap : 100;
+	},
+
+	seeds: function(i, pl) {			// Object of crop --> count.
+		return this.r.steps[i][pl].observation.private.seeds;
+	},
+
+	inventories: function(i, pl) {		// Array of item --> count objects, index 0 is the main farmer, the rest are hands.
+		return this.r.steps[i][pl].observation.private.inventories;
+	},
+
 };
 
 

@@ -6,6 +6,9 @@ const TILE_SIZE = 36;
 const PAD = 8;
 const BOARD_GAP = 48;
 const HEADER_HEIGHT = 24;
+const FOOTER_LINE_HEIGHT = 16;
+const FOOTER_LINES = 3;
+const FOOTER_HEIGHT = 6 + FOOTER_LINES * FOOTER_LINE_HEIGHT;
 
 const CROP_COLOURS = {
 	WHEAT:      "#d4b84a",
@@ -46,7 +49,7 @@ function draw(replay, index) {
 	let board_px = bs * TILE_SIZE;
 
 	let want_width = PAD * 2 + players * board_px + (players - 1) * BOARD_GAP;
-	let want_height = PAD * 2 + HEADER_HEIGHT + board_px;
+	let want_height = PAD * 2 + HEADER_HEIGHT + board_px + FOOTER_HEIGHT;
 
 	if (canvas.width !== want_width || canvas.height !== want_height) {
 		canvas.width = want_width;
@@ -64,6 +67,7 @@ function draw(replay, index) {
 		draw_header(ctx, replay, index, pl, ox, PAD);
 		draw_board(ctx, replay.tiles(index, pl), bs, day, ox, oy);
 		draw_units(ctx, replay.units(index, pl), ox, oy);
+		draw_player_info(ctx, replay, index, pl, ox, oy + board_px + 6, board_px);
 	}
 
 	statusbox.textContent = `Step ${index + 1} / ${replay.length()} -- Day ${day}, Hour ${replay.hour(index)}`;
@@ -153,6 +157,52 @@ function draw_tile(ctx, tile, day, px, py) {
 		ctx.fillStyle = "#ffffff";
 		ctx.fillText(`${yield_units}`, px + TILE_SIZE - 3, py + TILE_SIZE - 2);
 	}
+}
+
+function draw_player_info(ctx, replay, index, pl, x, y, max_width) {
+
+	// Shed, seeds, and carried items. Carried items live in per-unit inventories
+	// which we aggregate; they auto-drop to the shed at end of day anyway.
+
+	let shed = replay.shed(index, pl);
+	let shed_total = Object.values(shed).reduce((a, b) => a + b, 0);
+
+	let carried = {};
+	for (let inv of replay.inventories(index, pl)) {
+		for (let [item, n] of Object.entries(inv)) {
+			carried[item] = (carried[item] || 0) + n;
+		}
+	}
+
+	let lines = [
+		`Shed ${shed_total}/${replay.shed_capacity()}: ${itemlist(shed)}`,
+		`Seeds: ${itemlist(replay.seeds(index, pl))}`,
+		`Carrying: ${itemlist(carried)}`,
+	];
+
+	ctx.font = "12px Consolas, monospace";
+	ctx.textAlign = "left";
+	ctx.textBaseline = "top";
+	ctx.fillStyle = "#cccccc";
+
+	for (let n = 0; n < lines.length; n++) {
+		ctx.fillText(fit_text(ctx, lines[n], max_width), x, y + n * FOOTER_LINE_HEIGHT);
+	}
+}
+
+function itemlist(o) {
+	let parts = Object.entries(o).filter(([item, n]) => n > 0).map(([item, n]) => `${item} ${n}`);
+	return parts.length > 0 ? parts.join(", ") : "-";
+}
+
+function fit_text(ctx, text, max_width) {
+	if (ctx.measureText(text).width <= max_width) {
+		return text;
+	}
+	while (text.length > 1 && ctx.measureText(text + "…").width > max_width) {
+		text = text.slice(0, -1);
+	}
+	return text + "…";
 }
 
 function draw_units(ctx, units, ox, oy) {
