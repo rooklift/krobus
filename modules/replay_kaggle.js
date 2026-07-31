@@ -59,6 +59,10 @@ const kaggle_replay_props = {
 		return this.r.steps[i][0].observation.market.prices;
 	},
 
+	market_inventory: function(i) {		// Object of item --> units the market holds. Prices rise as this falls below 10000.
+		return this.r.steps[i][0].observation.market.inventory;
+	},
+
 	shops: function(i) {				// Array of unlocked shop names.
 		return this.r.steps[i][0].observation.town.unlocked_shops;
 	},

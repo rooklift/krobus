@@ -73,7 +73,8 @@ function draw(replay, index) {
 	statusbox.textContent = `Step ${index + 1} / ${replay.length()} -- Day ${day}, Hour ${replay.hour(index)}`;
 
 	let prices = replay.prices(index);
-	pricesbox.textContent = Object.entries(prices).map(([item, price]) => `${item} $${price}`).join("   ");
+	let market_inv = replay.market_inventory(index);
+	pricesbox.textContent = Object.entries(prices).map(([item, price]) => `${item} $${price} (${market_inv_to_str(market_inv[item])})`).join("   ");
 
 	let shops = replay.shops(index);
 	shopsbox.textContent = "Shops: " + (shops.length > 0 ? shops.join(", ") : "(none)");
@@ -230,6 +231,14 @@ function draw_units(ctx, units, ox, oy) {
 		ctx.lineWidth = 1.5;
 		ctx.stroke();
 	}
+}
+
+function market_inv_to_str(n) {
+	let s = (10000 - n).toString();
+	if (s[0] !== "-") {
+		s = "+" + s;
+	}
+	return s;
 }
 
 
