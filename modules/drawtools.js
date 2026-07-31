@@ -237,7 +237,8 @@ function draw_tile(ctx, tile, day, px, py) {
 
 	if (blue_ring || green_ring) {
 
-		// Both at once: blue takes the top and right edges, green the left and bottom.
+		// Blue always paints the top and right edges, green the left and bottom, each
+		// drawn only when its state applies -- so a half-ring means one thing was done.
 
 		let x0 = px + 2;
 		let y0 = py + 2;
@@ -246,22 +247,21 @@ function draw_tile(ctx, tile, day, px, py) {
 
 		ctx.lineWidth = 2;
 
-		if (blue_ring && green_ring) {
+		if (blue_ring) {
 			ctx.strokeStyle = "#5ab4e0";
 			ctx.beginPath();
 			ctx.moveTo(x0, y0);
 			ctx.lineTo(x1, y0);
 			ctx.lineTo(x1, y1);
 			ctx.stroke();
+		}
+		if (green_ring) {
 			ctx.strokeStyle = "#55bb77";
 			ctx.beginPath();
 			ctx.moveTo(x0, y0);
 			ctx.lineTo(x0, y1);
 			ctx.lineTo(x1, y1);
 			ctx.stroke();
-		} else {
-			ctx.strokeStyle = blue_ring ? "#5ab4e0" : "#55bb77";
-			ctx.strokeRect(x0, y0, TILE_SIZE - 4, TILE_SIZE - 4);
 		}
 	}
 
