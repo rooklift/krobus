@@ -283,7 +283,7 @@ function draw_player_info(replay, index, pl, div) {
 	}
 
 	let lines = [
-		`${replay.team_name(pl)} -- $${Math.round(replay.money(index, pl))}`,
+		`${replay.team_name(pl)} --> $${Math.round(replay.money(index, pl))}`,
 		``,
 		`Shed usage: ${shed_total}/${replay.shed_capacity()}`,
 		``,
