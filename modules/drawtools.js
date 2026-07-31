@@ -2,15 +2,15 @@
 
 // Draw should acquire all its info by calling methods on the replay object.
 
-const TILE_SIZE = 36;
+const TILE_SIZE = 40;
 const PAD = 8;
 
 const CROP_COLOURS = {
-	WHEAT:      "#d4b84a",
-	CARROT:     "#e8862d",
-	TOMATO:     "#d9463e",
-	STRAWBERRY: "#e5586e",
-	MELON:      "#59c26a",
+	WHEAT:      "#ddcc66",
+	CARROT:     "#ee8833",
+	TOMATO:     "#ee8833",
+	STRAWBERRY: "#eebbbb",
+	MELON:      "#55bb77",
 };
 
 // What each town shop consumes is not declared in the replay, so this is copied from
