@@ -291,8 +291,8 @@ function draw_player_info(replay, index, pl, div) {
 		`Seed: ${itemlist(replay.seeds(index, pl))}`,
 		`Held: ${itemlist(carried)}`,
 		``,
-		`Growing: ${itemlist(crops)}` + (weeds > 0 ? ` (${weeds} weed${weeds === 1 ? "" : "s"})` : ""),
-		`Animals: ${itemlist(animals)}` + (empty_pens > 0 ? ` (${empty_pens} empty pen${empty_pens === 1 ? "" : "s"})` : ""),
+		`Growing: ${itemlist(crops)}` + (weeds > 0 ? ` (${weeds}\u00a0weed${weeds === 1 ? "" : "s"})` : ""),
+		`Animals: ${itemlist(animals)}` + (empty_pens > 0 ? ` (${empty_pens}\u00a0empty\u00a0pen${empty_pens === 1 ? "" : "s"})` : ""),
 	];
 
 	lines.push(``);
@@ -558,7 +558,7 @@ function market_orders_strings(orders) {
 }
 
 function itemlist(o) {
-	let parts = Object.entries(o).filter(([item, n]) => n > 0).map(([item, n]) => `${item} ${n}`);		// nbsp, so line wraps can't separate item from count.
+	let parts = Object.entries(o).filter(([item, n]) => n > 0).map(([item, n]) => `${item}\u00a0${n}`);		// nbsp, so line wraps can't separate item from count.
 	return parts.length > 0 ? parts.join(", ") : "-";
 }
 
