@@ -347,7 +347,12 @@ function draw_tile_info(replay, index, pl, x, y) {
 			lines.push(age < cd.first_yield_day ? `${base} (first in ${cd.first_yield_day - age}).` : `${base}.`);
 		}
 
-		lines.push(`Yield ready: ${tile.yield_units}` + (cd ? ` (max ${cd.max_yield})` : ""));
+		if (cd) {
+			let gate = (!cd.ongoing && age < cd.first_yield_day) ? `, harvest from age ${cd.first_yield_day}` : "";
+			lines.push(`Yield ready: ${tile.yield_units} (max ${cd.max_yield}${gate})`);
+		} else {
+			lines.push(`Yield ready: ${tile.yield_units}`);
+		}
 
 		if (cd && !cd.ongoing) {
 			let ws = Math.floor((cd.max_yield_day + 1) / 2);
