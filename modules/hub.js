@@ -25,8 +25,10 @@ let hub_main_props = {
 		this.index = 0;
 		this.selection = null;
 		this.hover = null;
+		this.legend_item = null;		// The graph legend entry under the mouse, mirrored into graph.set_highlight().
 		this.graph_dragging = false;	// Mouse button is down after starting on the graph; moves seek.
 		this.suppress_click = false;	// The next click event is the tail end of a graph seek; ignore it.
+		graph.set_highlight(null);
 	},
 
 	clear_selection() {
@@ -186,6 +188,19 @@ let hub_main_props = {
 			return;
 		}
 
+		// Hovering a graph legend entry highlights its line; like the tile hover, only
+		// the graph is redrawn, and only when the hovered entry actually changes.
+
+		let legend_item = (event.target && event.target.dataset && event.target.dataset.item) || null;
+
+		if (legend_item !== this.legend_item) {
+			this.legend_item = legend_item;
+			graph.set_highlight(legend_item);
+			if (this.replay) {
+				graph.draw(this.replay, this.index);
+			}
+		}
+
 		let hit = drawtools.tile_at_point(this.replay, event.target, event.offsetX, event.offsetY);
 		let hover = hit ? {player: hit[0], x: hit[1], y: hit[2]} : null;
 
@@ -209,6 +224,13 @@ let hub_main_props = {
 
 	clear_hover() {
 		this.hover = null;
+		if (this.legend_item) {
+			this.legend_item = null;
+			graph.set_highlight(null);
+			if (this.replay) {
+				graph.draw(this.replay, this.index);
+			}
+		}
 		if (!this.selection) {
 			drawtools.draw_tile_info(null, 0, 0, 0, 0);			// Clears.
 		}

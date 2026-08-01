@@ -43,12 +43,16 @@ const LEGEND_COLOURS_LIGHT = {			// The above, darkened to read on the light bod
 
 let LEGEND_COLOURS = Object.assign({}, LEGEND_COLOURS_DARK);
 
-let log_scale = false;	// Set by set_log(); a mismatch with cache.log_scale forces a rebuild.
+let log_scale = false;		// Set by set_log(); a mismatch with cache.log_scale forces a rebuild.
+
+let highlight_item = null;	// Set by set_highlight() when the mouse is on a legend entry. Unlike the
+							// above, never triggers a rebuild: draw() applies it on top of the blit.
 
 let cache = {
 	replay: null,		// The replay the offscreen canvas was built from.
 	canvas: null,		// Offscreen canvas holding background and price lines.
 	items: null,		// Item names in a fixed order (that of step 0's prices object).
+	points: null,		// Map item --> array of [x, y], so one line can be restroked without a rebuild.
 	log_scale: false,	// Whether the canvas was built with the log y-scale.
 	x0: 0, x1: 0,		// Plot pixel bounds within the canvas, for index <--> x conversion.
 	y0: 0, y1: 0,
@@ -65,6 +69,7 @@ function draw(replay, index) {
 	if (!replay) {
 		cache.replay = null;
 		cache.canvas = null;
+		cache.points = null;
 		cv.width = 0;					// Collapses the canvas entirely.
 		cv.height = 0;
 		markettitle.textContent = "";
@@ -83,6 +88,16 @@ function draw(replay, index) {
 
 	let ctx = cv.getContext("2d");
 	ctx.drawImage(cache.canvas, 0, 0);
+
+	if (highlight_item && cache.points[highlight_item]) {
+
+		// One translucent background-coloured rect fades every baked-in line at once;
+		// the highlighted line is then restroked, bright and bold, on top.
+
+		ctx.fillStyle = "rgba(31, 31, 31, 0.75)";				// CANVAS_BACKGROUND with alpha.
+		ctx.fillRect(0, 0, cv.width, cv.height);
+		stroke_line(ctx, cache.points[highlight_item], LINE_COLOURS[highlight_item] || "#999999", 2);
+	}
 
 	let x = Math.floor(index_to_x(replay, index)) + 0.5;		// The 0.5 keeps the 1px line crisp.
 	ctx.strokeStyle = "#efefef";
@@ -159,21 +174,30 @@ function build(replay, width) {
 
 	let denom = Math.max(1, len - 1);
 
+	cache.points = {};
+
 	for (let item of items) {
-		ctx.strokeStyle = LINE_COLOURS[item] || "#999999";
-		ctx.lineWidth = 1;
-		ctx.beginPath();
+		let points = new Array(len);
 		for (let i = 0; i < len; i++) {
-			let x = cache.x0 + (i / denom) * (cache.x1 - cache.x0);
-			let y = y_of(series[item][i]);
-			if (i === 0) {
-				ctx.moveTo(x, y);
-			} else {
-				ctx.lineTo(x, y);
-			}
+			points[i] = [cache.x0 + (i / denom) * (cache.x1 - cache.x0), y_of(series[item][i])];
 		}
-		ctx.stroke();
+		cache.points[item] = points;
+		stroke_line(ctx, points, LINE_COLOURS[item] || "#999999", 1);
 	}
+}
+
+function stroke_line(ctx, points, colour, width) {
+	ctx.strokeStyle = colour;
+	ctx.lineWidth = width;
+	ctx.beginPath();
+	for (let i = 0; i < points.length; i++) {
+		if (i === 0) {
+			ctx.moveTo(points[i][0], points[i][1]);
+		} else {
+			ctx.lineTo(points[i][0], points[i][1]);
+		}
+	}
+	ctx.stroke();
 }
 
 function draw_legend(replay, index, legend) {
@@ -188,6 +212,7 @@ function draw_legend(replay, index, legend) {
 	for (let n = 0; n < cache.items.length; n++) {
 		let item = cache.items[n];
 		let span = document.createElement("span");
+		span.dataset.item = item;						// Lets hub.mousemove spot legend hovers.
 		span.style.color = LEGEND_COLOURS[item] || "#999999";
 		span.textContent = item.padEnd(11) + price_str(prices[item] ?? 0).padStart(6);
 		legend.appendChild(span);
@@ -231,12 +256,17 @@ function set_log(value) {
 	log_scale = value ? true : false;		// The next draw() sees the mismatch with cache.log_scale and rebuilds.
 }
 
+function set_highlight(item) {
+	highlight_item = item || null;			// Applied by draw() on top of the blit; no rebuild involved.
+}
+
 // ------------------------------------------------------------------------------------------------
 
 module.exports = {
 	draw,
 	set_dark,
 	set_log,
+	set_highlight,
 	contains,
 	index_at_clientX
 };
