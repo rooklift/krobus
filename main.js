@@ -220,6 +220,19 @@ function menu_build() {
 						win.webContents.send("toggle", "log_scale");
 					}
 				},
+				{
+					type: "separator"
+				},
+				{
+					role: "resetZoom"
+				},
+				{
+					role: "zoomOut"
+				},
+				{
+					role: "zoomIn",
+					accelerator: "CommandOrControl+=",
+				}
 			]
 		},
 		{
