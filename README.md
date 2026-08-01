@@ -1,4 +1,4 @@
-![Screenshot](https://github.com/user-attachments/assets/a3b57aca-2f30-4a64-b8d8-9d89061cb8e3)
+![Screenshot](https://github.com/user-attachments/assets/73bbaa5f-41c2-40bc-9e88-bc621307949e)
 
 Third party replay viewer for Kaggriculture.
 
