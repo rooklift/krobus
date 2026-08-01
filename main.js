@@ -302,6 +302,15 @@ function menu_build() {
 						});
 					}
 				},
+				{
+					label: "Clear selection (HIDDEN)",
+					accelerator: "Escape",
+					visible: false,
+					acceleratorWorksWhenHidden: true,
+					click: () => {
+						win.webContents.send("call", "clear_selection");
+					}
+				},
 			]
 		}
 	];
