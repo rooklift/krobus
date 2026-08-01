@@ -29,7 +29,14 @@ const LINE_COLOURS = {					// On the always-dark canvas.
 
 const LEGEND_COLOURS_DARK = Object.assign({}, LINE_COLOURS);
 
-const LEGEND_COLOURS_LIGHT = {			// The above, darkened to read on the light body.
+// The legend layout: fertilizer (mechanically special) sits alone at top left with
+// the animal products below it, while the crops fill the right column. Each group is
+// sorted by its starting price, descending -- which is the same every game.
+
+const LEGEND_LEFT  = ["FERTILIZER", null, "WOOL", "MILK", "EGG"];
+const LEGEND_RIGHT = ["MELON", "STRAWBERRY", "TOMATO", "CARROT", "WHEAT"];
+
+const LEGEND_COLOURS_LIGHT = {			// LINE_COLOURS, darkened to read on the light body.
 	WHEAT:      "#997700",
 	CARROT:     "#bb5511",
 	TOMATO:     "#bb2222",
@@ -51,7 +58,6 @@ let highlight_item = null;	// Set by set_highlight() when the mouse is on a lege
 let cache = {
 	replay: null,		// The replay the offscreen canvas was built from.
 	canvas: null,		// Offscreen canvas holding background and price lines.
-	items: null,		// Item names in a fixed order (that of step 0's prices object).
 	points: null,		// Map item --> array of [x, y], so one line can be restroked without a rebuild.
 	log_scale: false,	// Whether the canvas was built with the log y-scale.
 	x0: 0, x1: 0,		// Plot pixel bounds within the canvas, for index <--> x conversion.
@@ -153,7 +159,6 @@ function build(replay, width) {
 
 	cache.replay = replay;
 	cache.canvas = canvas;
-	cache.items = items;
 	cache.log_scale = log_scale;
 	cache.x0 = 2;
 	cache.x1 = width - 3;
@@ -202,22 +207,35 @@ function stroke_line(ctx, points, colour, width) {
 
 function draw_legend(replay, index, legend) {
 
-	// Two items per row, each coloured as its line and showing the price at the
-	// current step. Rebuilt from scratch every draw -- it's only 9 spans.
+	// Renders the two hardcoded columns, each entry coloured as its line and showing
+	// the price at the current step. Rebuilt from scratch every draw -- it's only 9
+	// spans.
 
 	legend.textContent = "";
 
 	let prices = replay.prices(index);
+	let rows = Math.max(LEGEND_LEFT.length, LEGEND_RIGHT.length);
 
-	for (let n = 0; n < cache.items.length; n++) {
-		let item = cache.items[n];
-		let span = document.createElement("span");
-		span.dataset.item = item;						// Lets hub.mousemove spot legend hovers.
-		span.style.color = LEGEND_COLOURS[item] || "#999999";
-		span.textContent = item.padEnd(11) + price_str(prices[item] ?? 0).padStart(6);
-		legend.appendChild(span);
-		legend.appendChild(document.createTextNode(n % 2 === 0 ? "   " : "\n"));
+	for (let row = 0; row < rows; row++) {
+		append_legend_cell(legend, LEGEND_LEFT[row], prices);
+		legend.appendChild(document.createTextNode("   "));
+		append_legend_cell(legend, LEGEND_RIGHT[row], prices);
+		legend.appendChild(document.createTextNode("\n"));
 	}
+}
+
+function append_legend_cell(legend, item, prices) {
+
+	if (!item) {										// Missing or null entry: pad the cell so the other column aligns.
+		legend.appendChild(document.createTextNode(" ".repeat(11 + 6)));
+		return;
+	}
+
+	let span = document.createElement("span");
+	span.dataset.item = item;							// Lets hub.mousemove spot legend hovers.
+	span.style.color = LEGEND_COLOURS[item] || "#999999";
+	span.textContent = item.padEnd(11) + price_str(prices[item] ?? 0).padStart(6);
+	legend.appendChild(span);
 }
 
 // ------------------------------------------------------------------------------------------------
