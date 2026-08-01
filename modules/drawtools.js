@@ -1,5 +1,7 @@
 "use strict";
 
+const graph = require("./graph");		// Requires nothing itself, so no circularity.
+
 const TILE_SIZE = 40;
 const PAD = 1;		// Board offset from the canvas edge. Tiles are inset 1px on every side, so this
 					// makes the edge gap 2px -- the same as the internal lines between tiles.
@@ -107,7 +109,7 @@ function draw(replay, index, selection, hover) {	// selection: see hub.click(). 
 		statusbox.textContent = "";
 		farmcols.textContent = "";			// Also deletes the per-player columns.
 		draw_tile_info(null, 0, 0, 0, 0);	// Clears.
-		// draw_market_info(null, 0);		// Superseded by graph.js (called from hub.draw); see draw_market_info.
+		graph.draw(null, 0);				// Clears. (The graph superseded draw_market_info, kept below unused.)
 		return;
 	}
 
@@ -186,7 +188,7 @@ function draw(replay, index, selection, hover) {	// selection: see hub.click(). 
 
 	statusbox.textContent = `Step ${index} / ${replay.length()}\nDay ${day}, Hour ${replay.hour(index)}`;
 
-	// draw_market_info(replay, index);		// Superseded by graph.js (called from hub.draw); see draw_market_info.
+	graph.draw(replay, index);				// The graph superseded draw_market_info, kept below unused.
 }
 
 // ------------------------------------------------------------------------------------------------

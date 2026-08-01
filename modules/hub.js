@@ -77,7 +77,6 @@ let hub_main_props = {
 
 	draw: function() {
 		drawtools.draw(this.replay, this.index, this.selection, this.hover);
-		graph.draw(this.replay, this.index);
 	},
 
 	backward(n) {
