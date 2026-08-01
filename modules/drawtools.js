@@ -203,7 +203,7 @@ function draw_tile(ctx, tile, day, px, py) {
 	let letter_colour = "#efefef";
 	let yield_units = 0;
 	let blue_ring = false;			// Watered (plants) or fed (animals).
-	let green_ring = false;		// Fertilized (plants) or cared for (animals).
+	let green_ring = false;			// Fertilized (plants) or cared for (animals).
 	let fert_square = false;		// Animal-produced fertilizer waiting to be collected.
 
 	if (tile === "LOCKED") {
@@ -283,7 +283,7 @@ function draw_tile(ctx, tile, day, px, py) {
 	}
 
 	if (fert_square) {
-		ctx.fillStyle = "#5ab4e0";		// Bottom-left corner, inset 4px so it clears the 2px rings.
+		ctx.fillStyle = "#55bb77";		// Bottom-left corner, inset 4px so it clears the 2px rings.
 		ctx.fillRect(px + 4, py + TILE_SIZE - 10, 6, 6);
 	}
 }
