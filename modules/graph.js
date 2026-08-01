@@ -4,7 +4,8 @@
 // and their prices at the current step) in #graphlegend. The expensive part -- the
 // price lines for the whole replay -- is rendered just once per replay, to an
 // offscreen canvas; draw() blits that, adds the vertical current-step line, and
-// refreshes the legend. Like the boards, the graph canvas stays dark in both themes,
+// refreshes the legend. The y-scale is linear or logarithmic, per config.log_graph
+// (arriving via set_log). Like the boards, the graph canvas stays dark in both themes,
 // so the lines never change; only the legend text (which sits on the body
 // background) has theme-dependent colours.
 
@@ -42,10 +43,13 @@ const LEGEND_COLOURS_LIGHT = {			// The above, darkened to read on the light bod
 
 let LEGEND_COLOURS = Object.assign({}, LEGEND_COLOURS_DARK);
 
+let log_scale = false;	// Set by set_log(); a mismatch with cache.log_scale forces a rebuild.
+
 let cache = {
 	replay: null,		// The replay the offscreen canvas was built from.
-	canvas: null,		// Offscreen canvas holding background, gridlines, and price lines.
+	canvas: null,		// Offscreen canvas holding background and price lines.
 	items: null,		// Item names in a fixed order (that of step 0's prices object).
+	log_scale: false,	// Whether the canvas was built with the log y-scale.
 	x0: 0, x1: 0,		// Plot pixel bounds within the canvas, for index <--> x conversion.
 	y0: 0, y1: 0,
 };
@@ -68,7 +72,7 @@ function draw(replay, index) {
 		return;
 	}
 
-	if (cache.replay !== replay) {
+	if (cache.replay !== replay || cache.log_scale !== log_scale) {
 		build(replay, cv.parentElement.clientWidth || 448);
 	}
 
@@ -103,6 +107,7 @@ function build(replay, width) {
 
 	let series = {};
 	let ymax = 0;
+	let ymin = Infinity;		// Smallest positive price, for the log scale's bottom.
 
 	for (let item of items) {
 		series[item] = new Array(len);
@@ -113,13 +118,14 @@ function build(replay, width) {
 			let v = (typeof prices[item] === "number") ? prices[item] : 0;
 			series[item][i] = v;
 			if (v > ymax) ymax = v;
+			if (v > 0 && v < ymin) ymin = v;
 		}
 	}
-
-	let step = nice_step((ymax > 0 ? ymax : 1) / 4);		// Gridline spacing: 1, 2 or 5 * 10^k, giving 4-ish lines.
-	let top = Math.ceil(ymax / step) * step;
-	if (top === 0) {
-		top = step;
+	if (ymax <= 0) {
+		ymax = 1;
+	}
+	if (!Number.isFinite(ymin)) {
+		ymin = 1;
 	}
 
 	let canvas = document.createElement("canvas");
@@ -133,31 +139,23 @@ function build(replay, width) {
 	cache.replay = replay;
 	cache.canvas = canvas;
 	cache.items = items;
+	cache.log_scale = log_scale;
 	cache.x0 = 2;
 	cache.x1 = width - 3;
 	cache.y0 = 2;
 	cache.y1 = GRAPH_HEIGHT - 3;
 
-	// Horizontal gridlines with price labels, drawn under the price lines...
+	// The y mapping: linear from 0 to the highest price seen, or logarithmic from the
+	// lowest (positive) price to the highest. Non-positive prices, which the log
+	// can't place, clamp to the bottom.
 
-	ctx.font = "10px Consolas, monospace";
-	ctx.textAlign = "left";
-	ctx.textBaseline = "bottom";
+	let t0 = Math.log(ymin);
+	let t_denom = (ymax > ymin) ? Math.log(ymax) - t0 : 1;
 
-	for (let k = 1; k * step <= top * 1.0001; k++) {		// Epsilon for float accumulation when step isn't integer.
-		let v = k * step;
-		let y = Math.floor(price_to_y(v, top)) + 0.5;
-		ctx.strokeStyle = "#3a3a3a";
-		ctx.lineWidth = 1;
-		ctx.beginPath();
-		ctx.moveTo(cache.x0, y);
-		ctx.lineTo(cache.x1, y);
-		ctx.stroke();
-		ctx.fillStyle = "#888888";
-		ctx.fillText(price_str(v), cache.x0 + 3, y - 1);
-	}
-
-	// The price lines themselves...
+	let y_of = (v) => {
+		let frac = log_scale ? (Math.log(Math.max(v, ymin)) - t0) / t_denom : v / ymax;
+		return cache.y1 - frac * (cache.y1 - cache.y0);
+	};
 
 	let denom = Math.max(1, len - 1);
 
@@ -167,7 +165,7 @@ function build(replay, width) {
 		ctx.beginPath();
 		for (let i = 0; i < len; i++) {
 			let x = cache.x0 + (i / denom) * (cache.x1 - cache.x0);
-			let y = price_to_y(series[item][i], top);
+			let y = y_of(series[item][i]);
 			if (i === 0) {
 				ctx.moveTo(x, y);
 			} else {
@@ -199,10 +197,6 @@ function draw_legend(replay, index, legend) {
 
 // ------------------------------------------------------------------------------------------------
 
-function price_to_y(v, top) {
-	return cache.y1 - (v / top) * (cache.y1 - cache.y0);
-}
-
 function index_to_x(replay, index) {
 	let denom = Math.max(1, replay.length() - 1);
 	return cache.x0 + (index / denom) * (cache.x1 - cache.x0);
@@ -225,16 +219,6 @@ function contains(target) {			// Is the event target the graph?
 	return Boolean(target) && target.id === "graphcanvas";
 }
 
-function nice_step(raw) {
-	let mag = Math.pow(10, Math.floor(Math.log10(raw)));
-	for (let m of [1, 2, 5]) {
-		if (m * mag >= raw) {
-			return m * mag;
-		}
-	}
-	return 10 * mag;
-}
-
 function price_str(v) {
 	return "$" + (Number.isInteger(v) ? `${v}` : v.toFixed(1));
 }
@@ -243,11 +227,16 @@ function set_dark(dark) {
 	Object.assign(LEGEND_COLOURS, dark ? LEGEND_COLOURS_DARK : LEGEND_COLOURS_LIGHT);
 }
 
+function set_log(value) {
+	log_scale = value ? true : false;		// The next draw() sees the mismatch with cache.log_scale and rebuilds.
+}
+
 // ------------------------------------------------------------------------------------------------
 
 module.exports = {
 	draw,
 	set_dark,
+	set_log,
 	contains,
 	index_at_clientX
 };

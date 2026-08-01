@@ -7,7 +7,8 @@ const graph = require("./graph");
 const multichecks = {};
 
 const togglechecks = {
-	dark_mode:			["App", "Dark mode"],
+	dark_mode:			["Options", "Dark mode"],
+	log_graph:			["Options", "Log scale graph"],
 };
 
 for (let menupath of Object.values(multichecks)) {
@@ -18,8 +19,9 @@ for (let menupath of Object.values(togglechecks)) {
 	ipcRenderer.send("verify_menupath", menupath);
 }
 
-drawtools.set_dark(config.dark_mode);		// Apply the saved theme at startup; config is loaded by this point.
+drawtools.set_dark(config.dark_mode);		// Apply the saved settings at startup; config is loaded by this point.
 graph.set_dark(config.dark_mode);
+graph.set_log(config.log_graph);
 
 module.exports = {
 
@@ -35,6 +37,12 @@ module.exports = {
 
 				drawtools.set_dark(value);
 				graph.set_dark(value);
+				this.draw();
+				break;
+
+			case "log_graph":
+
+				graph.set_log(value);
 				this.draw();
 				break;
 		}

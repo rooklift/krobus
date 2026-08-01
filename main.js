@@ -192,6 +192,19 @@ function menu_build() {
 					}
 				},
 				{
+					type: "separator",
+				},
+				{
+					label: "Quit",
+					accelerator: "CommandOrControl+Q",
+					role: "quit"
+				},
+			]
+		},
+		{
+			label: "Options",
+			submenu: [
+				{
 					label: "Dark mode",
 					type: "checkbox",
 					checked: config.dark_mode,
@@ -200,12 +213,12 @@ function menu_build() {
 					}
 				},
 				{
-					type: "separator",
-				},
-				{
-					label: "Quit",
-					accelerator: "CommandOrControl+Q",
-					role: "quit"
+					label: "Log scale graph",
+					type: "checkbox",
+					checked: config.log_graph,
+					click: () => {
+						win.webContents.send("toggle", "log_graph");
+					}
 				},
 			]
 		},
