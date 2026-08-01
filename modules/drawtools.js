@@ -107,7 +107,7 @@ function draw(replay, index, selection, hover) {	// selection: see hub.click(). 
 		statusbox.textContent = "";
 		farmcols.textContent = "";			// Also deletes the per-player columns.
 		draw_tile_info(null, 0, 0, 0, 0);	// Clears.
-		draw_market_info(null, 0);
+		// draw_market_info(null, 0);		// Superseded by graph.js (called from hub.draw); see draw_market_info.
 		return;
 	}
 
@@ -186,7 +186,7 @@ function draw(replay, index, selection, hover) {	// selection: see hub.click(). 
 
 	statusbox.textContent = `Step ${index} / ${replay.length()}\nDay ${day}, Hour ${replay.hour(index)}`;
 
-	draw_market_info(replay, index);
+	// draw_market_info(replay, index);		// Superseded by graph.js (called from hub.draw); see draw_market_info.
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -550,6 +550,10 @@ function draw_unit_info(replay, index, pl, id) {
 }
 
 function draw_market_info(replay, index) {
+
+	// UNUSED: superseded by the price graph in graph.js, but kept around in case the
+	// stored-vs-equilibrium or daily demand info proves wanted again. Note the divs
+	// it wrote to (#pricesbox etc) are commented out in renderer.html.
 
 	// The market pane: current prices with stored amounts relative to equilibrium
 	// (scarcest first), then the town's pooled daily demand. Clears if no replay.

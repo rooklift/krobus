@@ -19,7 +19,7 @@ body {
 }
 
 #marketpane {
-	margin: 1em;
+	margin: 1em 0 1em 1em;
 	flex: 0 0 auto;
 }
 
@@ -84,4 +84,13 @@ canvas {
 
 #pricesbox {
 	white-space: pre;
+}
+
+#graphcanvas {
+	margin: 0.25em 0;
+}
+
+#graphlegend {
+	white-space: pre;
+	margin: 0.25em 0;
 }

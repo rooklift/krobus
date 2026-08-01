@@ -2,6 +2,7 @@
 
 const {ipcRenderer} = require("electron");
 const drawtools = require("./drawtools");
+const graph = require("./graph");
 
 const multichecks = {};
 
@@ -18,6 +19,7 @@ for (let menupath of Object.values(togglechecks)) {
 }
 
 drawtools.set_dark(config.dark_mode);		// Apply the saved theme at startup; config is loaded by this point.
+graph.set_dark(config.dark_mode);
 
 module.exports = {
 
@@ -32,6 +34,7 @@ module.exports = {
 			case "dark_mode":
 
 				drawtools.set_dark(value);
+				graph.set_dark(value);
 				this.draw();
 				break;
 		}

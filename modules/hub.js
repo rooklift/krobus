@@ -6,6 +6,7 @@ const path = require("path");
 
 const config_io = require("./config_io");
 const drawtools = require("./drawtools");
+const graph = require("./graph");
 const replay_kaggle = require("./replay_kaggle");
 
 function init() {
@@ -24,6 +25,8 @@ let hub_main_props = {
 		this.index = 0;
 		this.selection = null;
 		this.hover = null;
+		this.graph_dragging = false;	// Mouse button is down after starting on the graph; moves seek.
+		this.suppress_click = false;	// The next click event is the tail end of a graph seek; ignore it.
 	},
 
 	clear_selection() {
@@ -74,6 +77,7 @@ let hub_main_props = {
 
 	draw: function() {
 		drawtools.draw(this.replay, this.index, this.selection, this.hover);
+		graph.draw(this.replay, this.index);
 	},
 
 	backward(n) {
@@ -92,7 +96,24 @@ let hub_main_props = {
 		this.draw();
 	},
 
+	seek(i) {
+		if (!this.replay || !Number.isInteger(i)) {
+			return;
+		}
+		i = Math.max(0, Math.min(this.replay.length() - 1, i));
+		if (i === this.index) {
+			return;
+		}
+		this.index = i;
+		this.draw();
+	},
+
 	click(event) {
+
+		if (this.suppress_click) {			// This click is just the mouseup end of a graph seek.
+			this.suppress_click = false;
+			return;
+		}
 
 		// Selection is null, or {type: "tile", player, x, y}, or {type: "unit", player, id}
 		// where id 0 is the main farmer and 1+ are the hands. Repeated clicks on a tile
@@ -135,11 +156,36 @@ let hub_main_props = {
 		this.draw();
 	},
 
+	mousedown(event) {
+
+		// Pressing the button on the graph starts a seek-drag; mousemove continues it
+		// (wherever the mouse goes) and mouseup ends it, also suppressing the click
+		// event that follows, which would otherwise clear the selection.
+
+		if (this.replay && graph.contains(event.target)) {
+			this.graph_dragging = true;
+			this.seek(graph.index_at_clientX(this.replay, event.clientX));
+		}
+	},
+
+	mouseup(event) {
+		if (this.graph_dragging) {
+			this.graph_dragging = false;
+			this.suppress_click = true;
+		}
+	},
+
 	mousemove(event) {
 
 		// Tracks the tile under the mouse. While nothing is selected, the tile info
 		// pane follows the hover; a selection always takes precedence. Only the pane
-		// is updated here -- never a full draw -- so this stays cheap.
+		// is updated here -- never a full draw -- so this stays cheap. Not so during
+		// a graph seek-drag, which does full draws, like any other navigation.
+
+		if (this.graph_dragging) {
+			this.seek(graph.index_at_clientX(this.replay, event.clientX));
+			return;
+		}
 
 		let hit = drawtools.tile_at_point(this.replay, event.target, event.offsetX, event.offsetY);
 		let hover = hit ? {player: hit[0], x: hit[1], y: hit[2]} : null;

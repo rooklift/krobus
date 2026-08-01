@@ -1,0 +1,253 @@
+"use strict";
+
+// The market price history graph, drawn into #graphcanvas, with a legend (item names
+// and their prices at the current step) in #graphlegend. The expensive part -- the
+// price lines for the whole replay -- is rendered just once per replay, to an
+// offscreen canvas; draw() blits that, adds the vertical current-step line, and
+// refreshes the legend. Like the boards, the graph canvas stays dark in both themes,
+// so the lines never change; only the legend text (which sits on the body
+// background) has theme-dependent colours.
+
+const GRAPH_HEIGHT = 240;
+const CANVAS_BACKGROUND = "#1f1f1f";	// As BACKGROUND_COLOURS.canvas in drawtools.
+
+// Note that drawtools's CROP_COLOURS can't be reused here: it gives CARROT and
+// TOMATO the same orange, which is fine for tile letters but useless for lines.
+
+const LINE_COLOURS = {					// On the always-dark canvas.
+	WHEAT:      "#ddcc66",
+	CARROT:     "#ee8833",
+	TOMATO:     "#dd4444",
+	STRAWBERRY: "#ee99bb",
+	MELON:      "#55bb77",
+	EGG:        "#efefef",
+	MILK:       "#77aadd",
+	WOOL:       "#aa77dd",
+	FERTILIZER: "#997755",
+};
+
+const LEGEND_COLOURS_DARK = Object.assign({}, LINE_COLOURS);
+
+const LEGEND_COLOURS_LIGHT = {			// The above, darkened to read on the light body.
+	WHEAT:      "#997700",
+	CARROT:     "#bb5511",
+	TOMATO:     "#bb2222",
+	STRAWBERRY: "#cc4477",
+	MELON:      "#227744",
+	EGG:        "#555555",
+	MILK:       "#2266aa",
+	WOOL:       "#7733bb",
+	FERTILIZER: "#775533",
+};
+
+let LEGEND_COLOURS = Object.assign({}, LEGEND_COLOURS_DARK);
+
+let cache = {
+	replay: null,		// The replay the offscreen canvas was built from.
+	canvas: null,		// Offscreen canvas holding background, gridlines, and price lines.
+	items: null,		// Item names in a fixed order (that of step 0's prices object).
+	x0: 0, x1: 0,		// Plot pixel bounds within the canvas, for index <--> x conversion.
+	y0: 0, y1: 0,
+};
+
+// ------------------------------------------------------------------------------------------------
+
+function draw(replay, index) {
+
+	let cv = document.getElementById("graphcanvas");
+	let markettitle = document.getElementById("markettitle");
+	let legend = document.getElementById("graphlegend");
+
+	if (!replay) {
+		cache.replay = null;
+		cache.canvas = null;
+		cv.width = 0;					// Collapses the canvas entirely.
+		cv.height = 0;
+		markettitle.textContent = "";
+		legend.textContent = "";
+		return;
+	}
+
+	if (cache.replay !== replay) {
+		build(replay, cv.parentElement.clientWidth || 448);
+	}
+
+	if (cv.width !== cache.canvas.width || cv.height !== cache.canvas.height) {
+		cv.width = cache.canvas.width;
+		cv.height = cache.canvas.height;
+	}
+
+	let ctx = cv.getContext("2d");
+	ctx.drawImage(cache.canvas, 0, 0);
+
+	let x = Math.floor(index_to_x(replay, index)) + 0.5;		// The 0.5 keeps the 1px line crisp.
+	ctx.strokeStyle = "#efefef";
+	ctx.lineWidth = 1;
+	ctx.beginPath();
+	ctx.moveTo(x, cache.y0);
+	ctx.lineTo(x, cache.y1);
+	ctx.stroke();
+
+	markettitle.textContent = "Market:";
+	draw_legend(replay, index, legend);
+}
+
+function build(replay, width) {
+
+	// Renders every step's prices as polylines onto a new offscreen canvas, stored in
+	// the cache along with everything needed to interpret pixel coords later. Called
+	// lazily by draw(), once per replay.
+
+	let len = replay.length();
+	let items = Object.keys(replay.prices(0));
+
+	let series = {};
+	let ymax = 0;
+
+	for (let item of items) {
+		series[item] = new Array(len);
+	}
+	for (let i = 0; i < len; i++) {
+		let prices = replay.prices(i);
+		for (let item of items) {
+			let v = (typeof prices[item] === "number") ? prices[item] : 0;
+			series[item][i] = v;
+			if (v > ymax) ymax = v;
+		}
+	}
+
+	let step = nice_step((ymax > 0 ? ymax : 1) / 4);		// Gridline spacing: 1, 2 or 5 * 10^k, giving 4-ish lines.
+	let top = Math.ceil(ymax / step) * step;
+	if (top === 0) {
+		top = step;
+	}
+
+	let canvas = document.createElement("canvas");
+	canvas.width = width;
+	canvas.height = GRAPH_HEIGHT;
+	let ctx = canvas.getContext("2d");
+
+	ctx.fillStyle = CANVAS_BACKGROUND;
+	ctx.fillRect(0, 0, width, GRAPH_HEIGHT);
+
+	cache.replay = replay;
+	cache.canvas = canvas;
+	cache.items = items;
+	cache.x0 = 2;
+	cache.x1 = width - 3;
+	cache.y0 = 2;
+	cache.y1 = GRAPH_HEIGHT - 3;
+
+	// Horizontal gridlines with price labels, drawn under the price lines...
+
+	ctx.font = "10px Consolas, monospace";
+	ctx.textAlign = "left";
+	ctx.textBaseline = "bottom";
+
+	for (let k = 1; k * step <= top * 1.0001; k++) {		// Epsilon for float accumulation when step isn't integer.
+		let v = k * step;
+		let y = Math.floor(price_to_y(v, top)) + 0.5;
+		ctx.strokeStyle = "#3a3a3a";
+		ctx.lineWidth = 1;
+		ctx.beginPath();
+		ctx.moveTo(cache.x0, y);
+		ctx.lineTo(cache.x1, y);
+		ctx.stroke();
+		ctx.fillStyle = "#888888";
+		ctx.fillText(price_str(v), cache.x0 + 3, y - 1);
+	}
+
+	// The price lines themselves...
+
+	let denom = Math.max(1, len - 1);
+
+	for (let item of items) {
+		ctx.strokeStyle = LINE_COLOURS[item] || "#999999";
+		ctx.lineWidth = 1;
+		ctx.beginPath();
+		for (let i = 0; i < len; i++) {
+			let x = cache.x0 + (i / denom) * (cache.x1 - cache.x0);
+			let y = price_to_y(series[item][i], top);
+			if (i === 0) {
+				ctx.moveTo(x, y);
+			} else {
+				ctx.lineTo(x, y);
+			}
+		}
+		ctx.stroke();
+	}
+}
+
+function draw_legend(replay, index, legend) {
+
+	// Two items per row, each coloured as its line and showing the price at the
+	// current step. Rebuilt from scratch every draw -- it's only 9 spans.
+
+	legend.textContent = "";
+
+	let prices = replay.prices(index);
+
+	for (let n = 0; n < cache.items.length; n++) {
+		let item = cache.items[n];
+		let span = document.createElement("span");
+		span.style.color = LEGEND_COLOURS[item] || "#999999";
+		span.textContent = item.padEnd(11) + price_str(prices[item] ?? 0).padStart(6);
+		legend.appendChild(span);
+		legend.appendChild(document.createTextNode(n % 2 === 0 ? "   " : "\n"));
+	}
+}
+
+// ------------------------------------------------------------------------------------------------
+
+function price_to_y(v, top) {
+	return cache.y1 - (v / top) * (cache.y1 - cache.y0);
+}
+
+function index_to_x(replay, index) {
+	let denom = Math.max(1, replay.length() - 1);
+	return cache.x0 + (index / denom) * (cache.x1 - cache.x0);
+}
+
+function index_at_clientX(replay, clientX) {
+
+	// For graph seeking: a window clientX --> nearest step index, clamped. Valid
+	// whenever the graph has been drawn; note clientX may come from far off the
+	// canvas, since drags continue wherever the mouse goes.
+
+	let cv = document.getElementById("graphcanvas");
+	let rect = cv.getBoundingClientRect();
+	let frac = (clientX - rect.left - cache.x0) / Math.max(1, cache.x1 - cache.x0);
+	let i = Math.round(frac * (replay.length() - 1));
+	return Math.max(0, Math.min(replay.length() - 1, i));
+}
+
+function contains(target) {			// Is the event target the graph?
+	return Boolean(target) && target.id === "graphcanvas";
+}
+
+function nice_step(raw) {
+	let mag = Math.pow(10, Math.floor(Math.log10(raw)));
+	for (let m of [1, 2, 5]) {
+		if (m * mag >= raw) {
+			return m * mag;
+		}
+	}
+	return 10 * mag;
+}
+
+function price_str(v) {
+	return "$" + (Number.isInteger(v) ? `${v}` : v.toFixed(1));
+}
+
+function set_dark(dark) {
+	Object.assign(LEGEND_COLOURS, dark ? LEGEND_COLOURS_DARK : LEGEND_COLOURS_LIGHT);
+}
+
+// ------------------------------------------------------------------------------------------------
+
+module.exports = {
+	draw,
+	set_dark,
+	contains,
+	index_at_clientX
+};

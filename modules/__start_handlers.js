@@ -49,6 +49,14 @@ document.addEventListener("click", (event) => {
 	hub.click(event);
 });
 
+document.addEventListener("mousedown", (event) => {
+	hub.mousedown(event);
+});
+
+document.addEventListener("mouseup", (event) => {
+	hub.mouseup(event);
+});
+
 document.addEventListener("mousemove", (event) => {
 	hub.mousemove(event);
 });
