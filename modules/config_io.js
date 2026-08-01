@@ -29,7 +29,7 @@ exports.defaults = {
 	"height": 800,
 	"maxed": false,
 	"dark_mode": true,
-	"log_graph": false,
+	"log_scale": false,
 	"replay_folder": null,
 };
 

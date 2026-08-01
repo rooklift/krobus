@@ -215,9 +215,9 @@ function menu_build() {
 				{
 					label: "Log scale graph",
 					type: "checkbox",
-					checked: config.log_graph,
+					checked: config.log_scale,
 					click: () => {
-						win.webContents.send("toggle", "log_graph");
+						win.webContents.send("toggle", "log_scale");
 					}
 				},
 			]

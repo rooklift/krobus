@@ -28,7 +28,7 @@ const CROP_COLOURS_LIGHT = {
 	MELON:      "#55bb77",
 };
 
-const BACKGROUND_COLOURS_DARK = {
+const BG_COLOURS_DARK = {
 	body:    "#1f1f1f",
 	canvas:  "#1f1f1f",
 	locked:  "#181818",
@@ -39,7 +39,7 @@ const BACKGROUND_COLOURS_DARK = {
 	text:    "#efefef",
 };
 
-const BACKGROUND_COLOURS_LIGHT = {
+const BG_COLOURS_LIGHT = {
 	body:    "#e8e4dc",
 	canvas:  "#1f1f1f",
 	locked:  "#d2ccc2",
@@ -49,11 +49,6 @@ const BACKGROUND_COLOURS_LIGHT = {
 	pasture: "#5c6e46",
 	text:    "#26221c",
 };
-
-// The colours actually in use, set by set_dark()...
-
-let CROP_COLOURS = Object.assign({}, CROP_COLOURS_DARK);
-let BACKGROUND_COLOURS = Object.assign({}, BACKGROUND_COLOURS_DARK);
 
 // What each town shop consumes is not declared in the replay, so this is copied from
 // the game runner's SHOPS dict. Single-product shops consume double per tick.
@@ -149,7 +144,7 @@ function draw(replay, index, selection, hover) {	// selection: see hub.click(). 
 			col.style.width = `${canvas_px}px`;		// Pin the column too, else long farmbox lines widen it instead of wrapping.
 		}
 
-		ctx.fillStyle = BACKGROUND_COLOURS.canvas;
+		ctx.fillStyle = (config.dark_mode ? BG_COLOURS_DARK : BG_COLOURS_LIGHT).canvas;
 		ctx.fillRect(0, 0, cv.width, cv.height);
 
 		draw_board(ctx, replay.tiles(index, pl), bs, day, PAD, PAD);
@@ -203,7 +198,7 @@ function draw_board(ctx, tiles, bs, day, ox, oy) {
 
 function draw_tile(ctx, tile, day, px, py) {
 
-	let bg = BACKGROUND_COLOURS.soil;
+	let bg = (config.dark_mode ? BG_COLOURS_DARK : BG_COLOURS_LIGHT).soil;
 	let letter = "";
 	let letter_colour = "#efefef";
 	let yield_units = 0;
@@ -211,26 +206,26 @@ function draw_tile(ctx, tile, day, px, py) {
 	let green_ring = false;		// Fertilized (plants) or cared for (animals).
 
 	if (tile === "LOCKED") {
-		bg = BACKGROUND_COLOURS.locked;
+		bg = (config.dark_mode ? BG_COLOURS_DARK : BG_COLOURS_LIGHT).locked;
 	} else if (tile !== null) {
 		if (tile.kind === "WEED") {
 			letter = "x";
 			letter_colour = "#7a8b4a";
 		} else if (tile.kind === "PLANT") {
-			bg = BACKGROUND_COLOURS.plant;
+			bg = (config.dark_mode ? BG_COLOURS_DARK : BG_COLOURS_LIGHT).plant;
 			letter = tile.crop[0].toLowerCase();
-			letter_colour = CROP_COLOURS[tile.crop] || "#efefef";
+			letter_colour = (config.dark_mode ? CROP_COLOURS_DARK : CROP_COLOURS_LIGHT)[tile.crop] || "#efefef";
 			yield_units = tile.yield_units;
 			blue_ring = tile.watered_today;
 			green_ring = tile.fertilized_until_day >= day;
 		} else if (tile.animal) {
-			bg = (tile.kind === "COOP") ? BACKGROUND_COLOURS.coop : BACKGROUND_COLOURS.pasture;
+			bg = (config.dark_mode ? BG_COLOURS_DARK : BG_COLOURS_LIGHT)[tile.kind === "COOP" ? "coop" : "pasture"];
 			letter = tile.animal[0];
 			yield_units = tile.yield_units;
 			blue_ring = tile.fed_today;
 			green_ring = tile.cared_today;
 		} else if (tile.kind === "COOP" || tile.kind === "PASTURE") {
-			bg = (tile.kind === "COOP") ? BACKGROUND_COLOURS.coop : BACKGROUND_COLOURS.pasture;
+			bg = (config.dark_mode ? BG_COLOURS_DARK : BG_COLOURS_LIGHT)[tile.kind === "COOP" ? "coop" : "pasture"];
 			letter = tile.kind[0].toLowerCase();
 			letter_colour = "#999999";
 		}
@@ -648,15 +643,9 @@ function tile_at_point(replay, target, cx, cy) {
 }
 
 function set_dark(dark) {
-	if (dark) {
-		Object.assign(CROP_COLOURS, CROP_COLOURS_DARK);
-		Object.assign(BACKGROUND_COLOURS, BACKGROUND_COLOURS_DARK);
-	} else {
-		Object.assign(CROP_COLOURS, CROP_COLOURS_LIGHT);
-		Object.assign(BACKGROUND_COLOURS, BACKGROUND_COLOURS_LIGHT);
-	}
-	document.body.style.backgroundColor = BACKGROUND_COLOURS.body;		// The stylesheet's colours are just the dark-mode
-	document.body.style.color = BACKGROUND_COLOURS.text;				// defaults; this overrides them either way.
+	let o = dark ? BG_COLOURS_DARK : BG_COLOURS_LIGHT;
+	document.body.style.backgroundColor = o.body;		// The stylesheet's colours are just the dark-mode
+	document.body.style.color = o.text;					// defaults; this overrides them either way.
 }
 
 // ------------------------------------------------------------------------------------------------

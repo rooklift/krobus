@@ -4,13 +4,13 @@
 // and their prices at the current step) in #graphlegend. The expensive part -- the
 // price lines for the whole replay -- is rendered just once per replay, to an
 // offscreen canvas; draw() blits that, adds the vertical current-step line, and
-// refreshes the legend. The y-scale is linear or logarithmic, per config.log_graph
-// (arriving via set_log). Like the boards, the graph canvas stays dark in both themes,
+// refreshes the legend. The y-scale is linear or logarithmic, per config.log_scale.
+// Like the boards, the graph canvas stays dark in both themes,
 // so the lines never change; only the legend text (which sits on the body
 // background) has theme-dependent colours.
 
 const GRAPH_HEIGHT = 240;
-const CANVAS_BACKGROUND = "#1f1f1f";	// As BACKGROUND_COLOURS.canvas in drawtools.
+const CANVAS_BACKGROUND = "#1f1f1f";	// As the BG_COLOURS canvas entries in drawtools.
 
 // Note that drawtools's CROP_COLOURS can't be reused here: it gives CARROT and
 // TOMATO the same orange, which is fine for tile letters but useless for lines.
@@ -48,12 +48,8 @@ const LEGEND_COLOURS_LIGHT = {			// LINE_COLOURS, darkened to read on the light 
 	FERTILIZER: "#775533",
 };
 
-let LEGEND_COLOURS = Object.assign({}, LEGEND_COLOURS_DARK);
-
-let log_scale = false;		// Set by set_log(); a mismatch with cache.log_scale forces a rebuild.
-
-let highlight_item = null;	// Set by set_highlight() when the mouse is on a legend entry. Unlike the
-							// above, never triggers a rebuild: draw() applies it on top of the blit.
+let highlight_item = null;	// Set by set_highlight() when the mouse is on a legend entry. Never
+							// triggers a rebuild: draw() applies it on top of the blit.
 
 let cache = {
 	replay: null,		// The replay the offscreen canvas was built from.
@@ -83,7 +79,7 @@ function draw(replay, index) {
 		return;
 	}
 
-	if (cache.replay !== replay || cache.log_scale !== log_scale) {
+	if (cache.replay !== replay || cache.log_scale !== config.log_scale) {
 		build(replay, cv.parentElement.clientWidth || 448);
 	}
 
@@ -159,7 +155,7 @@ function build(replay, width) {
 
 	cache.replay = replay;
 	cache.canvas = canvas;
-	cache.log_scale = log_scale;
+	cache.log_scale = config.log_scale;
 	cache.x0 = 2;
 	cache.x1 = width - 3;
 	cache.y0 = 2;
@@ -173,7 +169,7 @@ function build(replay, width) {
 	let t_denom = (ymax > ymin) ? Math.log(ymax) - t0 : 1;
 
 	let y_of = (v) => {
-		let frac = log_scale ? (Math.log(Math.max(v, ymin)) - t0) / t_denom : v / ymax;
+		let frac = config.log_scale ? (Math.log(Math.max(v, ymin)) - t0) / t_denom : v / ymax;
 		return cache.y1 - frac * (cache.y1 - cache.y0);
 	};
 
@@ -233,7 +229,7 @@ function append_legend_cell(legend, item, prices) {
 
 	let span = document.createElement("span");
 	span.dataset.item = item;							// Lets hub.mousemove spot legend hovers.
-	span.style.color = LEGEND_COLOURS[item] || "#999999";
+	span.style.color = (config.dark_mode ? LEGEND_COLOURS_DARK : LEGEND_COLOURS_LIGHT)[item] || "#999999";
 	span.textContent = item.padEnd(11) + price_str(prices[item] ?? 0).padStart(6);
 	legend.appendChild(span);
 }
@@ -266,14 +262,6 @@ function price_str(v) {
 	return "$" + (Number.isInteger(v) ? `${v}` : v.toFixed(1));
 }
 
-function set_dark(dark) {
-	Object.assign(LEGEND_COLOURS, dark ? LEGEND_COLOURS_DARK : LEGEND_COLOURS_LIGHT);
-}
-
-function set_log(value) {
-	log_scale = value ? true : false;		// The next draw() sees the mismatch with cache.log_scale and rebuilds.
-}
-
 function set_highlight(item) {
 	highlight_item = item || null;			// Applied by draw() on top of the blit; no rebuild involved.
 }
@@ -282,8 +270,6 @@ function set_highlight(item) {
 
 module.exports = {
 	draw,
-	set_dark,
-	set_log,
 	set_highlight,
 	contains,
 	index_at_clientX
