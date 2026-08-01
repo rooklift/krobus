@@ -204,6 +204,7 @@ function draw_tile(ctx, tile, day, px, py) {
 	let yield_units = 0;
 	let blue_ring = false;			// Watered (plants) or fed (animals).
 	let green_ring = false;		// Fertilized (plants) or cared for (animals).
+	let fert_square = false;		// Animal-produced fertilizer waiting to be collected.
 
 	if (tile === "LOCKED") {
 		bg = (config.dark_mode ? BG_COLOURS_DARK : BG_COLOURS_LIGHT).locked;
@@ -224,6 +225,7 @@ function draw_tile(ctx, tile, day, px, py) {
 			yield_units = tile.yield_units;
 			blue_ring = tile.fed_today;
 			green_ring = tile.cared_today;
+			fert_square = tile.fertilizer_available;
 		} else if (tile.kind === "COOP" || tile.kind === "PASTURE") {
 			bg = (config.dark_mode ? BG_COLOURS_DARK : BG_COLOURS_LIGHT)[tile.kind === "COOP" ? "coop" : "pasture"];
 			letter = tile.kind[0].toLowerCase();
@@ -278,6 +280,11 @@ function draw_tile(ctx, tile, day, px, py) {
 		ctx.textBaseline = "bottom";
 		ctx.fillStyle = "#ffffff";
 		ctx.fillText(`${yield_units}`, px + TILE_SIZE - 3, py + TILE_SIZE - 2);
+	}
+
+	if (fert_square) {
+		ctx.fillStyle = "#5ab4e0";		// Bottom-left corner, inset 4px so it clears the 2px rings.
+		ctx.fillRect(px + 4, py + TILE_SIZE - 10, 6, 6);
 	}
 }
 
