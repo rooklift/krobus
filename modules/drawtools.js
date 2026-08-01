@@ -98,7 +98,7 @@ const MARKET_OP_ORDER = ["HIRE", "BUY_LAND", "BUY_SEED", "BUY_ANIMAL", "BUY_PROD
 
 // ------------------------------------------------------------------------------------------------
 
-function draw(replay, index, selection) {		// selection: [player, x, y] or null.
+function draw(replay, index, selection, hover) {	// selection: see hub.click(). hover: {player, x, y} or null.
 
 	let statusbox = document.getElementById("statusbox");
 	let farmcols = document.getElementById("farmcols");
@@ -178,6 +178,8 @@ function draw(replay, index, selection) {		// selection: [player, x, y] or null.
 		draw_tile_info(replay, index, selection.player, selection.x, selection.y);
 	} else if (selection && selection.type === "unit" && selection.player >= 0 && selection.player < players) {
 		draw_unit_info(replay, index, selection.player, selection.id);
+	} else if (hover && hover.player >= 0 && hover.player < players) {
+		draw_tile_info(replay, index, hover.player, hover.x, hover.y, "Mouseover:");
 	} else {
 		draw_tile_info(null, 0, 0, 0, 0);	// Clears.
 	}
@@ -392,11 +394,12 @@ function draw_player_info(replay, index, pl, div) {
 	div.textContent = lines.join("\n");
 }
 
-function draw_tile_info(replay, index, pl, x, y) {
+function draw_tile_info(replay, index, pl, x, y, title = "Selected:") {
 
 	// Writes everything knowable about one tile (and anyone standing on it) into the
-	// tilebox's title and body divs. draw() calls this with the current selection,
-	// or with a null replay to clear the pane.
+	// tilebox's title and body divs. draw() calls this with the current selection or
+	// (when nothing is selected) the hovered tile, or with a null replay to clear the
+	// pane. The hub also calls it directly on mousemove, skipping a full draw.
 
 	let tiletitle = document.getElementById("tiletitle");
 	let tilebody = document.getElementById("tilebody");
@@ -505,7 +508,7 @@ function draw_tile_info(replay, index, pl, x, y) {
 		}
 	}
 
-	tiletitle.textContent = "Selected:";
+	tiletitle.textContent = title;
 	tilebody.textContent = lines.join("\n");
 }
 
@@ -719,6 +722,7 @@ function market_inv_to_str(n, equilibrium) {
 
 module.exports = {
 	draw,
+	draw_tile_info,
 	set_dark,
 	tile_at_point
 };

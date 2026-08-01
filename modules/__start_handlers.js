@@ -49,6 +49,14 @@ document.addEventListener("click", (event) => {
 	hub.click(event);
 });
 
+document.addEventListener("mousemove", (event) => {
+	hub.mousemove(event);
+});
+
+document.addEventListener("mouseleave", () => {		// Mouse left the window; drop any hover info.
+	hub.clear_hover();
+});
+
 // ------------------------------------------------------------------------------------------------
 
 ipcRenderer.on("call", (event, msg) => {

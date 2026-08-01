@@ -23,6 +23,7 @@ let hub_main_props = {
 		this.replay = null;
 		this.index = 0;
 		this.selection = null;
+		this.hover = null;
 	},
 
 	clear_selection() {
@@ -72,7 +73,7 @@ let hub_main_props = {
 	},
 
 	draw: function() {
-		drawtools.draw(this.replay, this.index, this.selection);
+		drawtools.draw(this.replay, this.index, this.selection, this.hover);
 	},
 
 	backward(n) {
@@ -132,6 +133,40 @@ let hub_main_props = {
 
 		this.selection = next;
 		this.draw();
+	},
+
+	mousemove(event) {
+
+		// Tracks the tile under the mouse. While nothing is selected, the tile info
+		// pane follows the hover; a selection always takes precedence. Only the pane
+		// is updated here -- never a full draw -- so this stays cheap.
+
+		let hit = drawtools.tile_at_point(this.replay, event.target, event.offsetX, event.offsetY);
+		let hover = hit ? {player: hit[0], x: hit[1], y: hit[2]} : null;
+
+		if (hover === null && this.hover === null) {
+			return;
+		}
+		if (hover && this.hover && hover.player === this.hover.player && hover.x === this.hover.x && hover.y === this.hover.y) {
+			return;
+		}
+
+		this.hover = hover;
+
+		if (!this.selection) {
+			if (hover) {
+				drawtools.draw_tile_info(this.replay, this.index, hover.player, hover.x, hover.y, "Mouseover:");
+			} else {
+				drawtools.draw_tile_info(null, 0, 0, 0, 0);		// Clears.
+			}
+		}
+	},
+
+	clear_hover() {
+		this.hover = null;
+		if (!this.selection) {
+			drawtools.draw_tile_info(null, 0, 0, 0, 0);			// Clears.
+		}
 	},
 
 };
