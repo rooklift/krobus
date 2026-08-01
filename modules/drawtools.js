@@ -1,6 +1,6 @@
 "use strict";
 
-const graph = require("./graph");		// Requires nothing itself, so no circularity.
+const graph = require("./graph");
 
 const TILE_SIZE = 40;
 const PAD = 1;		// Board offset from the canvas edge. Tiles are inset 1px on every side, so this
