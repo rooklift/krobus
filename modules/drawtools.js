@@ -37,6 +37,8 @@ const BG_COLOURS_DARK = {
 	coop:    "#7b6144",
 	pasture: "#5c6e46",
 	text:    "#efefef",
+	market_failure: "#ff8fb3",
+	market_partial: "#ffe066",
 };
 
 const BG_COLOURS_LIGHT = {
@@ -48,6 +50,8 @@ const BG_COLOURS_LIGHT = {
 	coop:    "#7b6144",
 	pasture: "#5c6e46",
 	text:    "#26221c",
+	market_failure: "#c00050",
+	market_partial: "#806400",
 };
 
 // What each town shop consumes is not declared in the replay, so this is copied from
@@ -130,6 +134,7 @@ function draw(replay, index, selection, hover, swap) {		// selection: see hub.cl
 	}
 
 	let day = replay.day(index);
+	let market_results = replay.next_market_results(index);
 
 	for (let n = 0; n < players; n++) {
 
@@ -170,7 +175,7 @@ function draw(replay, index, selection, hover, swap) {		// selection: see hub.cl
 			ctx.strokeRect(PAD + hl[0] * TILE_SIZE, PAD + hl[1] * TILE_SIZE, TILE_SIZE, TILE_SIZE);		// The 2px stroke straddles the cell
 		}																								// boundary, consuming the gridlines.
 
-		draw_player_info(replay, index, pl, col.children[1]);
+		draw_player_info(replay, index, pl, col.children[1], market_results[pl] || []);
 	}
 
 	if (selection && selection.type === "tile" && selection.player >= 0 && selection.player < players) {
@@ -341,7 +346,7 @@ function unit_triangle_path(ctx, cx, cy, dx, dy, r) {
 
 // ------------------------------------------------------------------------------------------------
 
-function draw_player_info(replay, index, pl, div) {
+function draw_player_info(replay, index, pl, div, market_results) {
 
 	// Name and money, then shed, seeds, and carried items, as text in the player's
 	// div below their canvas. Carried items live in per-unit inventories which we
@@ -392,12 +397,19 @@ function draw_player_info(replay, index, pl, div) {
 		`Animals: ${itemlist(animals)}` + (empty_pens > 0 ? ` (${empty_pens}\u00a0empty\u00a0pen${empty_pens === 1 ? "" : "s"})` : ""),
 	];
 
+	let orders = replay.next_market_orders(index, pl);
+	let order_lines = market_orders_entries(orders, market_results);
 	lines.push(``);
-	lines.push(...market_orders_strings(replay.next_market_orders(index, pl)));
 
 	div.style.paddingLeft = `${TEXT_PAD}px`;
 	div.style.paddingRight = `${TEXT_PAD}px`;
-	div.textContent = lines.join("\n");
+	div.textContent = lines.join("\n") + (order_lines.length > 0 ? "\n" : "");
+	for (let entry of order_lines) {
+		let line = document.createElement("div");
+		line.classList.add("market-order", `market-order-${entry.status}`);
+		line.textContent = entry.text;
+		div.appendChild(line);
+	}
 }
 
 function draw_tile_info(replay, index, pl, x, y, title = "Selected:") {
@@ -660,11 +672,13 @@ function set_dark(dark) {
 	let o = dark ? BG_COLOURS_DARK : BG_COLOURS_LIGHT;
 	document.body.style.backgroundColor = o.body;		// The stylesheet's colours are just the dark-mode
 	document.body.style.color = o.text;					// defaults; this overrides them either way.
+	document.body.style.setProperty("--market-failure", o.market_failure);
+	document.body.style.setProperty("--market-partial", o.market_partial);
 }
 
 // ------------------------------------------------------------------------------------------------
 
-function market_orders_strings(orders) {
+function market_orders_entries(orders, results) {
 
 	// Purely for display: merges duplicate orders (HIRE x4; summed SELL counts) and
 	// sorts them into a fixed rational order, though the engine ran them as given.
@@ -672,10 +686,12 @@ function market_orders_strings(orders) {
 
 	let merged = new Map();
 
-	for (let o of orders) {
+	for (let order_index = 0; order_index < orders.length; order_index++) {
+		let o = orders[order_index];
 		if (!Array.isArray(o) || o.length === 0) {
 			continue;
 		}
+		let result = results[order_index] || {status: "failure"};
 		let op = o[0];
 		let key;
 		let entry;
@@ -693,6 +709,8 @@ function market_orders_strings(orders) {
 			entry = merged.get(key) || {op: key, item: "", n: 0, tally: true};
 			entry.n += 1;
 		}
+		entry.any_success = entry.any_success || result.status !== "failure";
+		entry.all_success = entry.all_success !== false && result.status === "success";
 		merged.set(key, entry);
 	}
 
@@ -707,10 +725,11 @@ function market_orders_strings(orders) {
 	});
 
 	return entries.map(e => {
+		let status = e.all_success ? "success" : (e.any_success ? "partial" : "failure");
 		if (e.tally) {
-			return e.n > 1 ? `${e.op} x${e.n}` : e.op;
+			return {text: e.n > 1 ? `${e.op} x${e.n}` : e.op, status};
 		}
-		return `${e.op} ${e.item} ${e.n}`;
+		return {text: `${e.op} ${e.item} ${e.n}`, status};
 	});
 }
 

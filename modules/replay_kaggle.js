@@ -1,5 +1,7 @@
 "use strict";
 
+const market = require("./market");
+
 const FARMER_MOVES = {			// Copied from the runner. y grows downward.
 	NORTH: [0, -1],
 	SOUTH: [0, 1],
@@ -134,6 +136,21 @@ const kaggle_replay_props = {
 			return [];
 		}
 		return action.market;
+	},
+
+	next_market_results: function(i) {
+		// The replay has no per-order result field. Re-run just the deterministic
+		// market portion of the engine against this step for every player together.
+		if (i + 1 >= this.length()) {
+			return Array.from({length: this.num_players()}, () => []);
+		}
+		return market.resolveTurn({
+			configuration: this.r.configuration,
+			market: this.r.steps[i][0].observation.market,
+			farms: this.r.steps[i][0].observation.farms,
+			privates: this.r.steps[i].map(step => step.observation.private),
+			actions: this.r.steps[i + 1].map(step => step.action),
+		});
 	},
 
 	// Private data is per-player, on that player's own observation...
