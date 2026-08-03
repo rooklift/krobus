@@ -711,7 +711,7 @@ function market_orders_entries(orders, results) {
 }
 
 function itemlist(o) {
-	let parts = Object.entries(o).filter(([item, n]) => n > 0).map(([item, n]) => `${item}\u00a0${n}`);		// nbsp, so line wraps can't separate item from count.
+	let parts = Object.entries(o).filter(([item, n]) => n > 0).map(([item, n]) => `${item}\u00a0${n}`);
 	return parts.length > 0 ? parts.join(", ") : "-";
 }
 
