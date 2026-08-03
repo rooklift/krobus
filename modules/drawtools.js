@@ -512,7 +512,7 @@ function draw_tile_info(replay, index, pl, x, y, title = "Selected:") {
 			}
 			let label = (n === 0) ? "F" : `H${n}`;
 			let action = actions[n];
-			let act = (Array.isArray(action) && action.length > 0) ? action.join(" ") : "-";
+			let act = (Array.isArray(action) && action.length > 0) ? action.join("\u00a0") : "-";		// nbsp, as itemlist().
 			lines.push(`${label} has ${itemlist(inventories[n] || {})}, will ${act}`);
 		}
 	}
@@ -551,7 +551,7 @@ function draw_unit_info(replay, index, pl, id) {
 		lines.push(`Carrying: ${itemlist(replay.inventories(index, pl)[id] || {})}`);
 
 		let action = replay.next_unit_actions(index, pl)[id];
-		lines.push(`Next action: ${Array.isArray(action) && action.length > 0 ? action.join(" ") : "-"}`);
+		lines.push(`Next action: ${Array.isArray(action) && action.length > 0 ? action.join("\u00a0") : "-"}`);		// nbsp, as itemlist().
 	}
 
 	tiletitle.textContent = "Selected:";
