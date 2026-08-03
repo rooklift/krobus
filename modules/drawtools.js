@@ -501,6 +501,7 @@ function draw_tile_info(replay, index, pl, x, y, title = "Selected:") {
 
 	let units = replay.units(index, pl);
 	let inventories = replay.inventories(index, pl);
+	let actions = replay.next_unit_actions(index, pl);
 	let pushed_gap = false;
 
 	for (let n = 0; n < units.length; n++) {
@@ -509,8 +510,10 @@ function draw_tile_info(replay, index, pl, x, y, title = "Selected:") {
 				lines.push(``);
 				pushed_gap = true;
 			}
-			let label = (n === 0) ? "Farmer" : `Hand ${n}`;
-			lines.push(`${label} carrying: ${itemlist(inventories[n] || {})}`);
+			let label = (n === 0) ? "F" : `H${n}`;
+			let action = actions[n];
+			let act = (Array.isArray(action) && action.length > 0) ? action.join(" ") : "-";
+			lines.push(`${label} has ${itemlist(inventories[n] || {})}, will ${act}`);
 		}
 	}
 

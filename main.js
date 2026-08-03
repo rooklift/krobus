@@ -89,8 +89,18 @@ electron.app.whenReady().then(() => {
 		win.show();
 		win.focus();
 
-		// This is the place to load any files given on command line, if we ever do so. Meh.
+		// Load any file given on the command line. In dev, argv is [electron.exe, appdir, ...args],
+		// in production it would be [app.exe, ...args].
 
+		let n = (path.basename(process.argv[0]).toLowerCase() === "electron.exe") ? 2 : 1;
+		let files = process.argv.slice(n).filter(a => !a.startsWith("-"));
+
+		if (files.length > 0) {
+			win.webContents.send("call", {
+				fn: "load_replay",
+				args: [files[0]]
+			});
+		}
 	});
 
 	if (path.basename(process.argv[0]) === "electron.exe") {		// i.e. it's not in production but in dev...
