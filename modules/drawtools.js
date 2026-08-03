@@ -95,7 +95,7 @@ const CROPS = {
 	MELON:      {first_yield_day: 10, max_yield_day: 12, interval: 0, max_yield: 6, ongoing: false},
 };
 
-const MARKET_OP_ORDER = ["HIRE", "BUY_LAND", "BUY_SEED", "BUY_ANIMAL", "BUY_PRODUCT", "SELL"];
+const MARKET_OPS = ["HIRE", "BUY_LAND", "BUY_SEED", "BUY_ANIMAL", "BUY_PRODUCT", "SELL"];
 
 // ------------------------------------------------------------------------------------------------
 
@@ -680,11 +680,10 @@ function set_dark(dark) {
 
 function market_orders_entries(orders, results) {
 
-	// Purely for display: merges duplicate orders (HIRE x4; summed SELL counts) and
-	// sorts them into a fixed rational order, though the engine ran them as given.
-	// Returns an array of display lines, empty if there were no orders.
+	// Keep every submitted order separate and in queue order, matching the order in
+	// which the engine processes it. Returns an empty array if there were no orders.
 
-	let merged = new Map();
+	let entries = [];
 
 	for (let order_index = 0; order_index < orders.length; order_index++) {
 		let o = orders[order_index];
@@ -693,44 +692,19 @@ function market_orders_entries(orders, results) {
 		}
 		let result = results[order_index] || {status: "failure"};
 		let op = o[0];
-		let key;
-		let entry;
+		let text;
 		if (op === "HIRE" || op === "BUY_LAND") {
-			key = op;
-			entry = merged.get(key) || {op: op, item: "", n: 0, tally: true};
-			entry.n += 1;
-		} else if (MARKET_OP_ORDER.includes(op) && o.length >= 2) {
-			key = `${op} ${o[1]}`;
-			entry = merged.get(key) || {op: op, item: `${o[1]}`, n: 0};
+			text = op;
+		} else if (MARKET_OPS.includes(op) && o.length >= 2) {
 			let n = parseInt(o[2], 10);
-			entry.n += Number.isFinite(n) ? n : 1;
+			text = `${op} ${o[1]} ${Number.isFinite(n) ? n : 1}`;
 		} else {
-			key = o.join(" ");				// Unrecognised op: show verbatim, tallied if repeated.
-			entry = merged.get(key) || {op: key, item: "", n: 0, tally: true};
-			entry.n += 1;
+			text = o.join(" ");				// Unrecognised op: show verbatim.
 		}
-		entry.any_success = entry.any_success || result.status !== "failure";
-		entry.all_success = entry.all_success !== false && result.status === "success";
-		merged.set(key, entry);
+		entries.push({text, status: result.status});
 	}
 
-	let entries = [...merged.values()];
-
-	entries.sort((a, b) => {
-		let ai = MARKET_OP_ORDER.indexOf(a.op);
-		let bi = MARKET_OP_ORDER.indexOf(b.op);
-		if (ai === -1) ai = MARKET_OP_ORDER.length;
-		if (bi === -1) bi = MARKET_OP_ORDER.length;
-		return (ai - bi) || a.item.localeCompare(b.item);
-	});
-
-	return entries.map(e => {
-		let status = e.all_success ? "success" : (e.any_success ? "partial" : "failure");
-		if (e.tally) {
-			return {text: e.n > 1 ? `${e.op} x${e.n}` : e.op, status};
-		}
-		return {text: `${e.op} ${e.item} ${e.n}`, status};
-	});
+	return entries;
 }
 
 function itemlist(o) {
