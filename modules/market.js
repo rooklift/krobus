@@ -50,7 +50,7 @@ function shape(func, x) {
 	return x;
 }
 
-function pythonRound(x) {
+function python_round(x) {
 	// Python rounds exact ties to even; JavaScript rounds them toward +infinity.
 	let lower = Math.floor(x);
 	let fraction = x - lower;
@@ -59,7 +59,7 @@ function pythonRound(x) {
 	return lower % 2 === 0 ? lower : lower + 1;
 }
 
-function marketPrice(item, inventory, params = MARKET_PARAMS) {
+function market_price(item, inventory, params = MARKET_PARAMS) {
 	let p = params[item];
 	let price;
 	if (inventory < p.I0) {
@@ -69,34 +69,34 @@ function marketPrice(item, inventory, params = MARKET_PARAMS) {
 		let amp = p.above_target * p.base / shape(p.above_func, p.T);
 		price = p.base - amp * shape(p.above_func, inventory - p.I0);
 	}
-	return Math.max(1, pythonRound(price));
+	return Math.max(1, python_round(price));
 }
 
-function refreshPrices(market) {
+function refresh_prices(market) {
 	let params = market.params || MARKET_PARAMS;
 	for (let item of PRODUCTS) {
-		market.prices[item] = marketPrice(item, market.inventory[item], params);
+		market.prices[item] = market_price(item, market.inventory[item], params);
 	}
 }
 
-function pythonInt(value) {
+function python_int(value) {
 	if (typeof value === "boolean") return value ? 1 : 0;
 	if (typeof value === "number") return Number.isFinite(value) ? Math.trunc(value) : null;
 	if (typeof value === "string" && /^\s*[+-]?\d+\s*$/.test(value)) return Number.parseInt(value, 10);
 	return null;
 }
 
-function configInt(configuration, key, fallback) {
+function config_int(configuration, key, fallback) {
 	let value = configuration && Object.prototype.hasOwnProperty.call(configuration, key) ? configuration[key] : fallback;
-	let parsed = pythonInt(value);
+	let parsed = python_int(value);
 	return parsed === null ? fallback : parsed;
 }
 
-function sumValues(object) {
+function sum_values(object) {
 	return Object.values(object).reduce((total, value) => total + value, 0);
 }
 
-function isShedAdjacent(position, boardSize) {
+function is_shed_adjacent(position, boardSize) {
 	let half = Math.floor(boardSize / 2);
 	let [x, y] = position;
 	return (x === half - 1 || x === half) && (y === half - 1 || y === half);
@@ -109,11 +109,11 @@ function take(inventory, item, n) {
 	return true;
 }
 
-function applyPreMarketUnitActions(farm, privateState, action, configuration) {
+function apply_pre_market_unit_actions(farm, privateState, action, configuration) {
 	// Unit actions run before the market. Only PICKUP/DROP/PLACE can alter the
 	// shed available to a SELL order, so only those effects need reproducing here.
-	let boardSize = configInt(configuration, "boardSize", 10);
-	let shedCapacity = configInt(configuration, "shedCapacity", 100);
+	let boardSize = config_int(configuration, "boardSize", 10);
+	let shedCapacity = config_int(configuration, "shedCapacity", 100);
 	let unitActions = [action.farmer].concat(Array.isArray(action.hands) ? action.hands : []);
 	let positions = [farm.farmer].concat(Array.isArray(farm.hands) ? farm.hands : []);
 	let inventories = privateState.inventories;
@@ -124,13 +124,13 @@ function applyPreMarketUnitActions(farm, privateState, action, configuration) {
 		let inv = inventories[idx] || (inventories[idx] = {});
 		let position = positions[idx];
 
-		if (order[0] === "DROP" && isShedAdjacent(position, boardSize)) {
+		if (order[0] === "DROP" && is_shed_adjacent(position, boardSize)) {
 			for (let [item, n] of Object.entries(inv)) {
 				if (n <= 0) {
 					delete inv[item];
 					continue;
 				}
-				let room = Math.max(0, shedCapacity - sumValues(privateState.shed));
+				let room = Math.max(0, shedCapacity - sum_values(privateState.shed));
 				let amount = Math.min(n, room);
 				if (amount > 0) privateState.shed[item] = (privateState.shed[item] || 0) + amount;
 				delete inv[item];
@@ -138,8 +138,8 @@ function applyPreMarketUnitActions(farm, privateState, action, configuration) {
 			continue;
 		}
 
-		if (order[0] === "PICKUP" && isShedAdjacent(position, boardSize) && order.length >= 2) {
-			let n = order.length >= 3 ? pythonInt(order[2]) : 1;
+		if (order[0] === "PICKUP" && is_shed_adjacent(position, boardSize) && order.length >= 2) {
+			let n = order.length >= 3 ? python_int(order[2]) : 1;
 			if (n === null || n <= 0) continue;
 			let item = order[1];
 			n = Math.min(n, privateState.shed[item] || 0);
@@ -157,11 +157,11 @@ function applyPreMarketUnitActions(farm, privateState, action, configuration) {
 				take(inv, item, 1);
 				continue;
 			}
-			if (!isShedAdjacent(position, boardSize)) continue;
-			let n = order.length >= 3 ? pythonInt(order[2]) : 1;
+			if (!is_shed_adjacent(position, boardSize)) continue;
+			let n = order.length >= 3 ? python_int(order[2]) : 1;
 			if (n === null || n <= 0) continue;
 			n = Math.min(n, inv[item] || 0);
-			let room = Math.max(0, shedCapacity - sumValues(privateState.shed));
+			let room = Math.max(0, shedCapacity - sum_values(privateState.shed));
 			n = Math.min(n, room);
 			if (n <= 0) continue;
 			inv[item] -= n;
@@ -171,19 +171,19 @@ function applyPreMarketUnitActions(farm, privateState, action, configuration) {
 	}
 }
 
-function requestedUnits(order) {
+function requested_units(order) {
 	if (!Array.isArray(order) || order.length === 0) return 1;
 	if (order[0] === "HIRE" || order[0] === "BUY_LAND") return 1;
-	let n = order.length >= 3 ? pythonInt(order[2]) : null;
+	let n = order.length >= 3 ? python_int(order[2]) : null;
 	return n !== null && n > 0 ? n : 1;
 }
 
-function parseOrder(order, result) {
+function parse_order(order, result) {
 	if (!Array.isArray(order) || order.length === 0) return null;
 	let op = order[0];
 	if (op === "HIRE" || op === "BUY_LAND") return {type: op, result};
 	if (!["BUY_SEED", "BUY_PRODUCT", "BUY_ANIMAL", "SELL"].includes(op) || order.length < 3) return null;
-	let n = pythonInt(order[2]);
+	let n = python_int(order[2]);
 	if (n === null || n <= 0) return null;
 	result.requested = n;
 	return {type: op, item: order[1], remaining: n, result};
@@ -196,7 +196,7 @@ function fib(n) {
 	return a;
 }
 
-function doHire(farm, privateState, multiplier) {
+function do_hire(farm, privateState, multiplier) {
 	let cost = multiplier * fib(farm.hires_today);
 	if (farm.money < cost) return false;
 	farm.money -= cost;
@@ -206,7 +206,7 @@ function doHire(farm, privateState, multiplier) {
 	return true;
 }
 
-function doBuyLand(farm) {
+function do_buy_land(farm) {
 	let nUnlockedExtra = farm.unlocked_quadrants.length - 1;
 	if (nUnlockedExtra >= LAND_ORDER.length) return false;
 	let cost = LAND_PRICES[nUnlockedExtra];
@@ -216,7 +216,7 @@ function doBuyLand(farm) {
 	return true;
 }
 
-function commitUnit(op, item, price, farm, privateState, market) {
+function commit_unit(op, item, price, farm, privateState, market) {
 	if (op === "SELL") {
 		if ((privateState.shed[item] || 0) <= 0) return false;
 		privateState.shed[item] -= 1;
@@ -246,22 +246,22 @@ function commitUnit(op, item, price, farm, privateState, market) {
 	return false;
 }
 
-function resolveTurn(input) {
+function resolve_turn(input) {
 	let configuration = input.configuration || {};
 	let market = clone(input.market);
 	let farms = clone(input.farms);
 	let privates = clone(input.privates);
 	let actions = input.actions.map(action => action && typeof action === "object" && !Array.isArray(action) ? action : {});
-	let maxOrders = Math.max(1, configInt(configuration, "maxMarketOrdersPerTurn", 10));
-	let hireMultiplier = configInt(configuration, "farmHandCostMult", 1);
+	let maxOrders = Math.max(1, config_int(configuration, "maxMarketOrdersPerTurn", 10));
+	let hireMultiplier = config_int(configuration, "farmHandCostMult", 1);
 
 	for (let player = 0; player < farms.length; player++) {
-		applyPreMarketUnitActions(farms[player], privates[player], actions[player] || {}, configuration);
+		apply_pre_market_unit_actions(farms[player], privates[player], actions[player] || {}, configuration);
 	}
 
 	let orders = actions.map(action => Array.isArray(action.market) ? action.market : []);
 	let results = orders.map(playerOrders => playerOrders.map(order => ({
-		requested: requestedUnits(order),
+		requested: requested_units(order),
 		fulfilled: 0,
 		status: "failure",
 	})));
@@ -270,16 +270,16 @@ function resolveTurn(input) {
 
 	for (let orderIndex = 0; orderIndex < maxLength; orderIndex++) {
 		let states = queues.map((queue, player) => orderIndex < queue.length ?
-				parseOrder(queue[orderIndex], results[player][orderIndex]) : null);
+				parse_order(queue[orderIndex], results[player][orderIndex]) : null);
 
 		for (let player = 0; player < states.length; player++) {
 			let state = states[player];
 			if (!state) continue;
 			if (state.type === "HIRE") {
-				if (doHire(farms[player], privates[player], hireMultiplier)) state.result.fulfilled = 1;
+				if (do_hire(farms[player], privates[player], hireMultiplier)) state.result.fulfilled = 1;
 				states[player] = null;
 			} else if (state.type === "BUY_LAND") {
-				if (doBuyLand(farms[player])) state.result.fulfilled = 1;
+				if (do_buy_land(farms[player])) state.result.fulfilled = 1;
 				states[player] = null;
 			}
 		}
@@ -289,10 +289,10 @@ function resolveTurn(input) {
 				if (!state || state.remaining <= 0) return null;
 				let item = state.item;
 				if (state.type === "SELL" && PRODUCTS.includes(item)) {
-					return {op: "SELL", item, price: marketPrice(item, market.inventory[item], market.params || MARKET_PARAMS), state, player};
+					return {op: "SELL", item, price: market_price(item, market.inventory[item], market.params || MARKET_PARAMS), state, player};
 				}
 				if (state.type === "BUY_PRODUCT" && (item === "WHEAT" || item === "FERTILIZER")) {
-					return {op: "BUY_PRODUCT", item, price: marketPrice(item, market.inventory[item] - 1, market.params || MARKET_PARAMS), state, player};
+					return {op: "BUY_PRODUCT", item, price: market_price(item, market.inventory[item] - 1, market.params || MARKET_PARAMS), state, player};
 				}
 				if (state.type === "BUY_SEED" && Object.prototype.hasOwnProperty.call(CROPS, item)) {
 					return {op: "BUY_SEED", item, price: CROPS[item].seed, state, player};
@@ -308,7 +308,7 @@ function resolveTurn(input) {
 			let committedAny = false;
 			for (let quote of quoted) {
 				if (!quote) continue;
-				if (commitUnit(quote.op, quote.item, quote.price, farms[quote.player], privates[quote.player], market)) {
+				if (commit_unit(quote.op, quote.item, quote.price, farms[quote.player], privates[quote.player], market)) {
 					quote.state.remaining -= 1;
 					quote.state.result.fulfilled += 1;
 					committedAny = true;
@@ -319,7 +319,7 @@ function resolveTurn(input) {
 			if (!committedAny) break;
 		}
 
-		refreshPrices(market);
+		refresh_prices(market);
 	}
 
 	for (let playerResults of results) {
@@ -332,6 +332,6 @@ function resolveTurn(input) {
 }
 
 module.exports = {
-	marketPrice,
-	resolveTurn,
+	market_price,
+	resolve_turn,
 };

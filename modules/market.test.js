@@ -21,8 +21,8 @@ function player(money, shed = {}, extras = {}) {
 
 function resolve(players, actions, configuration = {}) {
 	let inventory = Object.fromEntries(ITEMS.map(item => [item, 10000]));
-	let prices = Object.fromEntries(ITEMS.map(item => [item, market.marketPrice(item, inventory[item])]));
-	return market.resolveTurn({
+	let prices = Object.fromEntries(ITEMS.map(item => [item, market.market_price(item, inventory[item])]));
+	return market.resolve_turn({
 		configuration: Object.assign({boardSize: 10, shedCapacity: 100}, configuration),
 		market: {inventory, prices},
 		farms: players.map(p => p.farm),

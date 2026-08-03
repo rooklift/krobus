@@ -144,7 +144,7 @@ const kaggle_replay_props = {
 		if (i + 1 >= this.length()) {
 			return Array.from({length: this.num_players()}, () => []);
 		}
-		return market.resolveTurn({
+		return market.resolve_turn({
 			configuration: this.r.configuration,
 			market: this.r.steps[i][0].observation.market,
 			farms: this.r.steps[i][0].observation.farms,
