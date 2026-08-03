@@ -387,7 +387,7 @@ function draw_player_info(replay, index, pl, div, market_results) {
 	let lines = [
 		`${replay.team_name(pl)} --> $${Math.round(replay.money(index, pl))}`,
 		``,
-		`Shed usage: ${shed_total}/${replay.shed_capacity()}`,
+		`Shed usage: ${shed_total}/${replay.shed_capacity()}, hired hands: ${replay.units(index, pl).length - 1}`,
 		``,
 		`Shed: ${itemlist(shed)}`,
 		`Seed: ${itemlist(replay.seeds(index, pl))}`,
