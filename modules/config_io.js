@@ -25,7 +25,7 @@ exports.filepath = in_main_process ?
 global.config = {};
 
 exports.defaults = {
-	"width": 1380,
+	"width": 1340,
 	"height": 800,
 	"maxed": false,
 	"dark_mode": true,

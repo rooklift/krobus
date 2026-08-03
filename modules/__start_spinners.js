@@ -1,21 +1,30 @@
 "use strict";
 
-// Poll the window size; adjust our settings if needed. Does nothing if main.js has told us we are
-// maxed (by setting config.maxed). There is a race condition here -- the spinner might run after
-// the maximize but before hub has told us about it -- but meh.
+const layout = require("./layout");
 
-(function window_resize_spinner() {
+let redraw_frame = null;
 
-	if (!config.maxed) {
-
-		if (config.width !== window.innerWidth || config.height !== window.innerHeight) {
-
-			config.width = window.innerWidth;
-			config.height = window.innerHeight;
-
-		}
+function update_layout() {
+	if (!layout.update() || redraw_frame !== null) {
+		return;
 	}
 
-	setTimeout(window_resize_spinner, 127);
+	redraw_frame = window.requestAnimationFrame(() => {
+		redraw_frame = null;
+		hub.draw();
+	});
+}
+
+// Window resize covers ordinary resizing and most page-zoom changes. The short poll
+// also catches a DPR change when the window moves between differently scaled displays.
+
+window.addEventListener("resize", update_layout);
+if (window.visualViewport) {
+	window.visualViewport.addEventListener("resize", update_layout);
+}
+
+(function layout_spinner() {
+	update_layout();
+	setTimeout(layout_spinner, 127);
 
 })();

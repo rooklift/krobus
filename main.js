@@ -8,6 +8,9 @@ const stringify = require("./modules/stringify");
 const config_io = require("./modules/config_io");		// Creates global.config
 config_io.load();										// Populates global.config
 
+const MIN_CONTENT_WIDTH = config_io.defaults.width;
+const MIN_CONTENT_HEIGHT = config_io.defaults.height;
+
 let menu = menu_build();
 let menu_is_set = false;
 let have_received_ready = false;
@@ -16,10 +19,12 @@ let have_received_terminate = false;
 let win;												// Need to keep global references to every window we make. (Is that still true?)
 
 electron.app.whenReady().then(() => {
+	let initial_width = Number.isFinite(config.width) ? Math.max(MIN_CONTENT_WIDTH, Math.round(config.width)) : MIN_CONTENT_WIDTH;
+	let initial_height = Number.isFinite(config.height) ? Math.max(MIN_CONTENT_HEIGHT, Math.round(config.height)) : MIN_CONTENT_HEIGHT;
 
 	win = new electron.BrowserWindow({
-		width: Math.round(config.width),
-		height: Math.round(config.height),
+		width: initial_width,
+		height: initial_height,
 		backgroundColor: "#000000",
 		resizable: true,
 		show: false,
@@ -40,6 +45,8 @@ electron.app.whenReady().then(() => {
 		win.webContents.send("set", {maxed: false});	// I think they are only received when a maximized window becomes normal.
 	});													// So our .maxed var tracks what we are trying to be, when shown at all.
 
+	win.on("resized", remember_content_size);
+
 	// Note: even though there is an event called "restore", if we call win.restore() for a minimized window
 	// which wants to go back to being maximized, it generates a "maximize" event, not a "restore" event.
 
@@ -48,6 +55,7 @@ electron.app.whenReady().then(() => {
 		if (!have_received_terminate) {
 
 			event.preventDefault();						// Only a "terminate" message from the Renderer should close the app.
+			remember_content_size();
 
 			if (!have_sent_quit) {
 				win.webContents.send("call", "quit");	// Renderer's "quit" method runs. It then sends "terminate" back.
@@ -84,6 +92,8 @@ electron.app.whenReady().then(() => {
 
 		if (config.maxed) {
 			win.maximize();
+		} else {
+			remember_content_size();
 		}
 
 		win.show();
@@ -138,11 +148,39 @@ electron.app.whenReady().then(() => {
 
 	electron.Menu.setApplicationMenu(menu);
 	menu_is_set = true;
+	enforce_minimum_content_size();
 
 	// Actually load the page last, I guess, so the event handlers above are already set up.
 
 	win.loadFile(path.join(__dirname, "renderer.html"));
 });
+
+function enforce_minimum_content_size() {
+	// BrowserWindow's minimum is an outer-window size even though useContentSize makes
+	// the initial width/height describe the page. Add the current frame and menu size
+	// so the configured default content area is the true minimum.
+	let [outer_width, outer_height] = win.getSize();
+	let [content_width, content_height] = win.getContentSize();
+	win.setMinimumSize(
+		MIN_CONTENT_WIDTH + outer_width - content_width,
+		MIN_CONTENT_HEIGHT + outer_height - content_height
+	);
+}
+
+function remember_content_size() {
+	// Page zoom changes window.innerWidth in the renderer, but not this size. Keep the
+	// last normal content size so zooming and maximizing cannot corrupt the saved bounds.
+	if (!win || win.isDestroyed() || win.isMaximized() || win.isMinimized() || win.isFullScreen()) {
+		return;
+	}
+
+	let [width, height] = win.getContentSize();
+	config.width = width;
+	config.height = height;
+	if (have_received_ready) {
+		win.webContents.send("set", {width, height});
+	}
+}
 
 // --------------------------------------------------------------------------------------------------------------
 

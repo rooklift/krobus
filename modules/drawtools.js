@@ -1,6 +1,7 @@
 "use strict";
 
 const graph = require("./graph");
+const layout = require("./layout");
 
 const TILE_SIZE = 40;
 const PAD = 1;		// Board offset from the canvas edge. Tiles are inset 1px on every side, so this
@@ -143,16 +144,11 @@ function draw(replay, index, selection, hover, swap) {		// selection: see hub.cl
 		let col = farmcols.children[n];
 		let cv = col.children[0];
 		cv.dataset.player = `${pl}`;			// Lets tile_at_point identify the clicked board, respecting any swap.
-		let ctx = cv.getContext("2d");
-
-		if (cv.width !== canvas_px || cv.height !== canvas_px) {
-			cv.width = canvas_px;
-			cv.height = canvas_px;
-			col.style.width = `${canvas_px}px`;		// Pin the column too, else long farmbox lines widen it instead of wrapping.
-		}
+		let ctx = layout.prepare_scaled_canvas(cv, canvas_px);
+		col.style.width = `${canvas_px * layout.scale()}px`;	// Pin the column too, else long farmbox lines widen it instead of wrapping.
 
 		ctx.fillStyle = (config.dark_mode ? BG_COLOURS_DARK : BG_COLOURS_LIGHT).canvas;
-		ctx.fillRect(0, 0, cv.width, cv.height);
+		ctx.fillRect(0, 0, canvas_px, canvas_px);
 
 		draw_board(ctx, replay.tiles(index, pl), bs, day, PAD, PAD);
 		draw_units(ctx, replay.units(index, pl), replay.unit_moves(index, pl), PAD, PAD);
@@ -401,8 +397,8 @@ function draw_player_info(replay, index, pl, div, market_results) {
 	let order_lines = market_orders_entries(orders, market_results);
 	lines.push(``);
 
-	div.style.paddingLeft = `${TEXT_PAD}px`;
-	div.style.paddingRight = `${TEXT_PAD}px`;
+	div.style.paddingLeft = `${TEXT_PAD * layout.scale()}px`;
+	div.style.paddingRight = `${TEXT_PAD * layout.scale()}px`;
 	div.textContent = lines.join("\n") + (order_lines.length > 0 ? "\n" : "");
 	for (let entry of order_lines) {
 		let line = document.createElement("div");
@@ -658,8 +654,8 @@ function tile_at_point(replay, target, cx, cy) {
 	}
 
 	let bs = replay.board_size();
-	let x = Math.floor((cx - PAD) / TILE_SIZE);
-	let y = Math.floor((cy - PAD) / TILE_SIZE);
+	let x = Math.floor((cx / layout.scale() - PAD) / TILE_SIZE);
+	let y = Math.floor((cy / layout.scale() - PAD) / TILE_SIZE);
 
 	if (x >= 0 && x < bs && y >= 0 && y < bs) {
 		return [pl, x, y];

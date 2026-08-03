@@ -1,10 +1,16 @@
+:root {
+	font-size: var(--ui-font-size, 16px);
+}
+
 body {
 	background-color: #1f1f1f;		/* Obsolete now, controlled by JS. */
 	color: #efefef;
 	height: 100vh;
+	min-width: var(--ui-min-width, 100%);
+	min-height: var(--ui-min-height, 100%);
 	margin: 0;
 	padding: 0;
-	overflow: hidden;
+	overflow: auto;		/* Native page zoom may deliberately make the scaled layout larger than the window. */
 	font-family: Consolas, "Courier New", monospace;
 	display: flex;
 	user-select: none;		/* App-like feel: no accidental text highlighting when clicking around. */

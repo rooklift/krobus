@@ -1,5 +1,7 @@
 "use strict";
 
+const layout = require("./layout");
+
 // The market price history graph, drawn into #graphcanvas, with a legend (item names
 // and their prices at the current step) in #graphlegend. The expensive part -- the
 // price lines for the whole replay -- is rendered just once per replay, to an
@@ -56,6 +58,12 @@ let cache = {
 	canvas: null,		// Offscreen canvas holding background and price lines.
 	points: null,		// Map item --> array of [x, y], so one line can be restroked without a rebuild.
 	log_scale: false,	// Whether the canvas was built with the log y-scale.
+	css_width: 0,		// Display dimensions, before device-pixel-ratio backing-store scaling.
+	css_height: 0,
+	pixel_ratio: 1,
+	ui_scale: 1,
+	backing_scale_x: 1,
+	backing_scale_y: 1,
 	x0: 0, x1: 0,		// Plot pixel bounds within the canvas, for index <--> x conversion.
 	y0: 0, y1: 0,
 };
@@ -74,22 +82,35 @@ function draw(replay, index) {
 		cache.points = null;
 		cv.width = 0;					// Collapses the canvas entirely.
 		cv.height = 0;
+		cv.style.width = "0px";
+		cv.style.height = "0px";
 		markettitle.textContent = "";
 		legend.textContent = "";
 		return;
 	}
 
-	if (cache.replay !== replay || cache.log_scale !== config.log_scale) {
-		build(replay, cv.parentElement.clientWidth || 448);
+	let ui_scale = layout.scale();
+	let pixel_ratio = layout.device_pixel_ratio();
+	let css_width = cv.parentElement.clientWidth || 448 * ui_scale;
+	let css_height = GRAPH_HEIGHT * ui_scale;
+
+	if (cache.replay !== replay || cache.log_scale !== config.log_scale ||
+			cache.css_width !== css_width || cache.css_height !== css_height ||
+			cache.pixel_ratio !== pixel_ratio || cache.ui_scale !== ui_scale) {
+		build(replay, css_width, css_height, pixel_ratio, ui_scale);
 	}
 
 	if (cv.width !== cache.canvas.width || cv.height !== cache.canvas.height) {
 		cv.width = cache.canvas.width;
 		cv.height = cache.canvas.height;
 	}
+	cv.style.width = `${cache.css_width}px`;
+	cv.style.height = `${cache.css_height}px`;
 
 	let ctx = cv.getContext("2d");
+	ctx.setTransform(1, 0, 0, 1, 0, 0);
 	ctx.drawImage(cache.canvas, 0, 0);
+	ctx.setTransform(cache.backing_scale_x, 0, 0, cache.backing_scale_y, 0, 0);
 
 	if (highlight_item && cache.points[highlight_item]) {
 
@@ -97,13 +118,13 @@ function draw(replay, index) {
 		// the highlighted line is then restroked, bright and bold, on top.
 
 		ctx.fillStyle = "rgba(31, 31, 31, 0.75)";				// CANVAS_BACKGROUND with alpha.
-		ctx.fillRect(0, 0, cv.width, cv.height);
-		stroke_line(ctx, cache.points[highlight_item], LINE_COLOURS[highlight_item] || "#999999", 2);
+		ctx.fillRect(0, 0, cache.css_width, cache.css_height);
+		stroke_line(ctx, cache.points[highlight_item], LINE_COLOURS[highlight_item] || "#999999", 2 * cache.ui_scale);
 	}
 
-	let x = Math.floor(index_to_x(replay, index)) + 0.5;		// The 0.5 keeps the 1px line crisp.
+	let x = index_to_x(replay, index);
 	ctx.strokeStyle = "#efefef";
-	ctx.lineWidth = 1;
+	ctx.lineWidth = cache.ui_scale;
 	ctx.beginPath();
 	ctx.moveTo(x, cache.y0);
 	ctx.lineTo(x, cache.y1);
@@ -113,7 +134,7 @@ function draw(replay, index) {
 	draw_legend(replay, index, legend);
 }
 
-function build(replay, width) {
+function build(replay, width, height, pixel_ratio, ui_scale) {
 
 	// Renders every step's prices as polylines onto a new offscreen canvas, stored in
 	// the cache along with everything needed to interpret pixel coords later. Called
@@ -146,20 +167,29 @@ function build(replay, width) {
 	}
 
 	let canvas = document.createElement("canvas");
-	canvas.width = width;
-	canvas.height = GRAPH_HEIGHT;
+	canvas.width = Math.max(1, Math.round(width * pixel_ratio));
+	canvas.height = Math.max(1, Math.round(height * pixel_ratio));
 	let ctx = canvas.getContext("2d");
+	let backing_scale_x = canvas.width / width;
+	let backing_scale_y = canvas.height / height;
+	ctx.setTransform(backing_scale_x, 0, 0, backing_scale_y, 0, 0);
 
 	ctx.fillStyle = CANVAS_BACKGROUND;
-	ctx.fillRect(0, 0, width, GRAPH_HEIGHT);
+	ctx.fillRect(0, 0, width, height);
 
 	cache.replay = replay;
 	cache.canvas = canvas;
 	cache.log_scale = config.log_scale;
-	cache.x0 = 2;
-	cache.x1 = width - 3;
-	cache.y0 = 2;
-	cache.y1 = GRAPH_HEIGHT - 3;
+	cache.css_width = width;
+	cache.css_height = height;
+	cache.pixel_ratio = pixel_ratio;
+	cache.ui_scale = ui_scale;
+	cache.backing_scale_x = backing_scale_x;
+	cache.backing_scale_y = backing_scale_y;
+	cache.x0 = 2 * ui_scale;
+	cache.x1 = width - 3 * ui_scale;
+	cache.y0 = 2 * ui_scale;
+	cache.y1 = height - 3 * ui_scale;
 
 	// The y mapping: linear from 0 to the highest price seen, or logarithmic from the
 	// lowest (positive) price to the highest. Non-positive prices, which the log
@@ -183,7 +213,7 @@ function build(replay, width) {
 			points[i] = [cache.x0 + (i / denom) * (cache.x1 - cache.x0), y_of(series[item][i])];
 		}
 		cache.points[item] = points;
-		stroke_line(ctx, points, LINE_COLOURS[item] || "#999999", 1);
+		stroke_line(ctx, points, LINE_COLOURS[item] || "#999999", ui_scale);
 	}
 }
 
@@ -249,7 +279,8 @@ function index_at_clientX(replay, clientX) {
 
 	let cv = document.getElementById("graphcanvas");
 	let rect = cv.getBoundingClientRect();
-	let frac = (clientX - rect.left - cache.x0) / Math.max(1, cache.x1 - cache.x0);
+	let canvas_x = (clientX - rect.left) * cache.css_width / Math.max(1, rect.width);
+	let frac = (canvas_x - cache.x0) / Math.max(1, cache.x1 - cache.x0);
 	let i = Math.round(frac * (replay.length() - 1));
 	return Math.max(0, Math.min(replay.length() - 1, i));
 }
