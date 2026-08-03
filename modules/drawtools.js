@@ -701,6 +701,9 @@ function market_orders_entries(orders, results) {
 		} else {
 			text = o.join(" ");				// Unrecognised op: show verbatim.
 		}
+		if (result.status === "partial") {
+			text += ` (${result.fulfilled})`;
+		}
 		entries.push({text, status: result.status});
 	}
 
