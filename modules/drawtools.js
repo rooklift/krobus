@@ -393,7 +393,7 @@ function draw_player_info(replay, index, pl, div) {
 	];
 
 	lines.push(``);
-	lines.push(...market_orders_strings(replay.market_orders(index, pl)));
+	lines.push(...market_orders_strings(replay.next_market_orders(index, pl)));
 
 	div.style.paddingLeft = `${TEXT_PAD}px`;
 	div.style.paddingRight = `${TEXT_PAD}px`;
@@ -536,20 +536,21 @@ function draw_unit_info(replay, index, pl, id) {
 		return;
 	}
 
-	let label = (id === 0) ? "Farmer" : `Hand ${id}`;
-	let lines = [`${replay.team_name(pl)} -- ${label}`, ``];
+	let lines = [];
 
 	let units = replay.units(index, pl);
+	let label = (id === 0) ? "Farmer" : `Hand ${id}`;
 
-	if (id >= units.length) {
-
-		lines.push(`Not on the board at this time.`);
-
+	if (id < units.length) {
+		lines.push(`${replay.team_name(pl)} -- ${label} [${units[id][0]}, ${units[id][1]}]`);
 	} else {
+		lines.push(`${replay.team_name(pl)} -- ${label} [absent]`);
+	}
 
-		lines.push(`At tile [${units[id][0]}, ${units[id][1]}]`);
+	lines.push(``);
+
+	if (id < units.length) {
 		lines.push(`Carrying: ${itemlist(replay.inventories(index, pl)[id] || {})}`);
-
 		let action = replay.next_unit_actions(index, pl)[id];
 		lines.push(`Next action: ${Array.isArray(action) && action.length > 0 ? action.join("\u00a0") : "-"}`);		// nbsp, as itemlist().
 	}

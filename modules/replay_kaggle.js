@@ -124,8 +124,12 @@ const kaggle_replay_props = {
 		return ret;
 	},
 
-	market_orders: function(i, pl) {	// Array of order arrays, e.g. ["SELL", "WHEAT", 20] or ["HIRE"]. These
-		let action = this.r.steps[i][pl].action;		// are the orders whose effects are already visible at step i.
+	next_market_orders: function(i, pl) {	// Array of order arrays, e.g. ["SELL", "WHEAT", 20] or ["HIRE"]. Like
+											// next_unit_actions, these are the orders made in response to step i,
+		if (i + 1 >= this.length()) {		// with effects visible at the next step. Empty array at the final step.
+			return [];
+		}
+		let action = this.r.steps[i + 1][pl].action;
 		if (typeof action !== "object" || action === null || !Array.isArray(action.market)) {
 			return [];
 		}
