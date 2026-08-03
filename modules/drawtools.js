@@ -95,7 +95,7 @@ const MARKET_OP_ORDER = ["HIRE", "BUY_LAND", "BUY_SEED", "BUY_ANIMAL", "BUY_PROD
 
 // ------------------------------------------------------------------------------------------------
 
-function draw(replay, index, selection, hover) {	// selection: see hub.click(). hover: {player, x, y} or null.
+function draw(replay, index, selection, hover, swap) {		// selection: see hub.click(). hover: {player, x, y} or null.
 
 	let statusbox = document.getElementById("statusbox");
 	let farmcols = document.getElementById("farmcols");
@@ -122,7 +122,6 @@ function draw(replay, index, selection, hover) {	// selection: see hub.click(). 
 		let col = document.createElement("div");
 		col.classList.add("farmcol");
 		let cv = document.createElement("canvas");
-		cv.dataset.player = `${farmcols.children.length}`;		// Lets tile_at_point identify the clicked board.
 		let d = document.createElement("div");
 		d.classList.add("farmbox");
 		col.appendChild(cv);
@@ -132,10 +131,13 @@ function draw(replay, index, selection, hover) {	// selection: see hub.click(). 
 
 	let day = replay.day(index);
 
-	for (let pl = 0; pl < players; pl++) {
+	for (let n = 0; n < players; n++) {
 
-		let col = farmcols.children[pl];
+		let pl = swap ? players - 1 - n : n;	// Swap reverses which player is drawn in which column.
+
+		let col = farmcols.children[n];
 		let cv = col.children[0];
+		cv.dataset.player = `${pl}`;			// Lets tile_at_point identify the clicked board, respecting any swap.
 		let ctx = cv.getContext("2d");
 
 		if (cv.width !== canvas_px || cv.height !== canvas_px) {

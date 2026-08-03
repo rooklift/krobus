@@ -224,6 +224,15 @@ function menu_build() {
 					type: "separator"
 				},
 				{
+					label: "Swap players",
+					click: () => {
+						win.webContents.send("call", "swap_players");
+					}
+				},
+				{
+					type: "separator"
+				},
+				{
 					role: "resetZoom"
 				},
 				{

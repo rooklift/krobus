@@ -25,6 +25,7 @@ let hub_main_props = {
 		this.index = 0;
 		this.selection = null;
 		this.hover = null;
+		this.swap = false;
 		this.legend_item = null;		// The graph legend entry under the mouse, mirrored into graph.set_highlight().
 		this.graph_dragging = false;	// Mouse button is down after starting on the graph; moves seek.
 		this.suppress_click = false;	// The next click event is the tail end of a graph seek; ignore it.
@@ -78,7 +79,7 @@ let hub_main_props = {
 	},
 
 	draw: function() {
-		drawtools.draw(this.replay, this.index, this.selection, this.hover);
+		drawtools.draw(this.replay, this.index, this.selection, this.hover, this.swap);
 	},
 
 	backward(n) {
@@ -234,6 +235,11 @@ let hub_main_props = {
 		if (!this.selection) {
 			drawtools.draw_tile_info(null, 0, 0, 0, 0);			// Clears.
 		}
+	},
+
+	swap_players() {
+		this.swap = !this.swap;
+		this.draw();
 	},
 
 };
