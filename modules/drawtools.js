@@ -701,8 +701,12 @@ function market_orders_entries(orders, results) {
 		} else {
 			text = o.join(" ");				// Unrecognised op: show verbatim.
 		}
+		let money = result.money || 0;
+		let money_text = money < 0 ? `-$${-money}` : `$${money}`;
 		if (result.status === "partial") {
-			text += ` (${result.fulfilled})`;
+			text += ` (${result.fulfilled}, ${money_text})`;
+		} else if (result.status === "success" && MARKET_OPS.includes(op)) {
+			text += ` (${money_text})`;
 		}
 		entries.push({text, status: result.status});
 	}

@@ -37,8 +37,8 @@ function resolve(players, actions, configuration = {}) {
 		{market: [["BUY_SEED", "WHEAT", 1]]},
 	]);
 	assert.deepEqual(results.map(r => r[0]), [
-		{requested: 3, fulfilled: 2, status: "partial"},
-		{requested: 1, fulfilled: 0, status: "failure"},
+		{requested: 3, fulfilled: 2, money: -20, status: "partial"},
+		{requested: 1, fulfilled: 0, money: 0, status: "failure"},
 	]);
 }
 
@@ -49,7 +49,9 @@ function resolve(players, actions, configuration = {}) {
 	]);
 	assert.equal(results[0][0].status, "partial");
 	assert.equal(results[0][0].fulfilled, 1);
+	assert.equal(results[0][0].money, 25);
 	assert.equal(results[1][0].status, "success");
+	assert.equal(results[1][0].money, 49);
 }
 
 {
@@ -61,12 +63,12 @@ function resolve(players, actions, configuration = {}) {
 	]);
 	assert.deepEqual(results, [
 		[
-			{requested: 3, fulfilled: 3, status: "success"},
-			{requested: 2, fulfilled: 2, status: "success"},
+			{requested: 3, fulfilled: 3, money: 75, status: "success"},
+			{requested: 2, fulfilled: 2, money: -100, status: "success"},
 		],
 		[
-			{requested: 4, fulfilled: 2, status: "partial"},
-			{requested: 2, fulfilled: 2, status: "success"},
+			{requested: 4, fulfilled: 2, money: -52, status: "partial"},
+			{requested: 2, fulfilled: 2, money: 48, status: "success"},
 		],
 	]);
 }
@@ -95,6 +97,7 @@ function resolve(players, actions, configuration = {}) {
 		{market: []},
 	], {maxMarketOrdersPerTurn: 2});
 	assert.deepEqual(results[0].map(r => r.status), ["success", "failure", "failure"]);
+	assert.deepEqual(results[0].map(r => r.money), [-1, 0, 0]);
 }
 
 {

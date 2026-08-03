@@ -263,6 +263,7 @@ function resolve_turn(input) {
 	let results = orders.map(playerOrders => playerOrders.map(order => ({
 		requested: requested_units(order),
 		fulfilled: 0,
+		money: 0,		// Player balance delta: negative for a purchase, positive for a sale.
 		status: "failure",
 	})));
 	let queues = orders.map(playerOrders => playerOrders.slice(0, maxOrders));
@@ -276,10 +277,18 @@ function resolve_turn(input) {
 			let state = states[player];
 			if (!state) continue;
 			if (state.type === "HIRE") {
-				if (do_hire(farms[player], privates[player], hireMultiplier)) state.result.fulfilled = 1;
+				let money_before = farms[player].money;
+				if (do_hire(farms[player], privates[player], hireMultiplier)) {
+					state.result.fulfilled = 1;
+					state.result.money = farms[player].money - money_before;
+				}
 				states[player] = null;
 			} else if (state.type === "BUY_LAND") {
-				if (do_buy_land(farms[player])) state.result.fulfilled = 1;
+				let money_before = farms[player].money;
+				if (do_buy_land(farms[player])) {
+					state.result.fulfilled = 1;
+					state.result.money = farms[player].money - money_before;
+				}
 				states[player] = null;
 			}
 		}
@@ -311,6 +320,7 @@ function resolve_turn(input) {
 				if (commit_unit(quote.op, quote.item, quote.price, farms[quote.player], privates[quote.player], market)) {
 					quote.state.remaining -= 1;
 					quote.state.result.fulfilled += 1;
+					quote.state.result.money += quote.op === "SELL" ? quote.price : -quote.price;
 					committedAny = true;
 				} else {
 					states[quote.player] = null;
