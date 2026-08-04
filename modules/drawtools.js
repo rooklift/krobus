@@ -348,14 +348,14 @@ function draw_selection(ctx, x, y, dx, dy, ox, oy) {
 	ctx.lineWidth = 2;
 	ctx.setLineDash([4, 8]);
 	ctx.beginPath();
-	ctx.moveTo(0, cy);
-	ctx.lineTo(cx, cy);
-	ctx.moveTo(ctx.canvas.width, cy);
-	ctx.lineTo(cx, cy);
-	ctx.moveTo(cx, 0);
-	ctx.lineTo(cx, cy);
-	ctx.moveTo(cx, ctx.canvas.height);
-	ctx.lineTo(cx, cy);
+	ctx.moveTo(cx, cy);
+	ctx.lineTo(0, cy);
+	ctx.moveTo(cx, cy);
+	ctx.lineTo(ctx.canvas.width, cy);
+	ctx.moveTo(cx, cy);
+	ctx.lineTo(cx, 0);
+	ctx.moveTo(cx, cy);
+	ctx.lineTo(cx, ctx.canvas.height);
 	ctx.stroke();
 	ctx.restore();
 }
