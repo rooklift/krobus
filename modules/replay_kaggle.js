@@ -18,7 +18,26 @@ function load(o) {					// Where o is an object already decoded from JSON.
 	}
 	let ret = {r: o};
 	Object.assign(ret, kaggle_replay_props);
+	ret.market_results = precompute_market_results(ret);
 	return ret;
+}
+
+function precompute_market_results(replay) {
+	// Resolve every turn at load time, sharing a price cache across the whole
+	// replay, then make next_market_results() a simple indexed lookup.
+	let price_cache = new Map();
+	let results = new Array(replay.length());
+	for (let i = 0; i + 1 < replay.length(); i++) {
+		results[i] = market.resolve_turn({
+			configuration: replay.r.configuration,
+			market: replay.r.steps[i][0].observation.market,
+			farms: replay.r.steps[i][0].observation.farms,
+			privates: replay.r.steps[i].map(step => step.observation.private),
+			actions: replay.r.steps[i + 1].map(step => step.action),
+		}, price_cache);
+	}
+	results[replay.length() - 1] = Array.from({length: replay.num_players()}, () => []);
+	return results;
 }
 
 const kaggle_replay_props = {
@@ -139,18 +158,7 @@ const kaggle_replay_props = {
 	},
 
 	next_market_results: function(i) {
-		// The replay has no per-order result field. Re-run just the deterministic
-		// market portion of the engine against this step for every player together.
-		if (i + 1 >= this.length()) {
-			return Array.from({length: this.num_players()}, () => []);
-		}
-		return market.resolve_turn({
-			configuration: this.r.configuration,
-			market: this.r.steps[i][0].observation.market,
-			farms: this.r.steps[i][0].observation.farms,
-			privates: this.r.steps[i].map(step => step.observation.private),
-			actions: this.r.steps[i + 1].map(step => step.action),
-		});
+		return this.market_results[i];
 	},
 
 	// Private data is per-player, on that player's own observation...
