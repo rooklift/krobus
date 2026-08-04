@@ -460,36 +460,51 @@ function draw_player_info(replay, index, pl, div, market_results) {
 }
 
 function draw_player_sales(replay, index, pl, div) {
-	let summary = replay.sales_summary(index, pl);
-	let rows = Object.entries(summary).map(([item, sale]) => ({
-		item,
-		sold: `${sale.sold}`,
-		average: money_str(sale.money / sale.sold),
-		total: money_str(sale.money),
-	}));
+	let item_order = graph.legend_items();
+	let sale_rows = financial_rows(item_order, replay.sales_summary(index, pl), "sold");
+	let purchased_items = item_order.filter(item => item === "FERTILIZER" || item === "WHEAT");
+	let purchase_rows = financial_rows(purchased_items, replay.purchase_summary(index, pl), "bought");
+	let widths = financial_widths(sale_rows.concat(purchase_rows));
 
 	div.style.paddingLeft = `${TEXT_PAD}px`;
 	div.style.paddingRight = `${TEXT_PAD}px`;
 	div.textContent = `${replay.team_name(pl)} --> $${Math.round(replay.money(index, pl))}\n\nSales to date:`;
+	div.appendChild(document.createTextNode("\n" + financial_table(sale_rows, widths) +
+			"\n\nPurchases to date:\n" + financial_table(purchase_rows, widths)));
+}
 
-	if (rows.length === 0) {
-		div.appendChild(document.createTextNode("\nNo items sold."));
-		return;
-	}
+function financial_rows(items, summary, units_key) {
+	return items.map(item => {
+		let entry = summary[item] || {[units_key]: 0, money: 0};
+		let units = entry[units_key];
+		return {
+			item,
+			units: `${units}`,
+			average: units > 0 ? money_str(entry.money / units) : "-",
+			total: money_str(entry.money),
+		};
+	});
+}
 
-	let item_width = Math.max("Item".length, ...rows.map(row => row.item.length));
-	let sold_width = Math.max("Sold".length, ...rows.map(row => row.sold.length));
-	let average_width = Math.max("Avg price".length, ...rows.map(row => row.average.length));
-	let total_width = Math.max("Total".length, ...rows.map(row => row.total.length));
+function financial_widths(rows) {
+	return {
+		item: Math.max(...rows.map(row => row.item.length)),
+		units: Math.max(...rows.map(row => row.units.length)),
+		average: Math.max("Avg price".length, ...rows.map(row => row.average.length)),
+		total: Math.max("Total".length, ...rows.map(row => row.total.length)),
+	};
+}
+
+function financial_table(rows, widths) {
 	let lines = [
-		"Item".padEnd(item_width) + "  " + "Sold".padStart(sold_width) + "  " +
-				"Avg price".padStart(average_width) + "  " + "Total".padStart(total_width),
+		" ".repeat(widths.item + widths.units + 4) +
+				"Avg price".padStart(widths.average) + "  " + "Total".padStart(widths.total),
 	];
 	for (let row of rows) {
-		lines.push(row.item.padEnd(item_width) + "  " + row.sold.padStart(sold_width) + "  " +
-				row.average.padStart(average_width) + "  " + row.total.padStart(total_width));
+		lines.push(row.item.padEnd(widths.item) + "  " + row.units.padStart(widths.units) + "  " +
+				row.average.padStart(widths.average) + "  " + row.total.padStart(widths.total));
 	}
-	div.appendChild(document.createTextNode("\n" + lines.join("\n")));
+	return lines.join("\n");
 }
 
 function draw_tile_info(replay, index, pl, x, y, title = "Selected:") {
@@ -800,7 +815,8 @@ function itemlist(o) {
 }
 
 function money_str(n) {
-	return "$" + (Number.isInteger(n) ? `${n}` : n.toFixed(1));
+	let abs = Math.abs(n);
+	return (n < 0 ? "-$" : "$") + (Number.isInteger(abs) ? `${abs}` : abs.toFixed(1));
 }
 
 function market_inv_to_str(n, equilibrium) {

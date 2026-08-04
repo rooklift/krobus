@@ -20,7 +20,8 @@ function load(o) {					// Where o is an object already decoded from JSON.
 	Object.assign(ret, kaggle_replay_props);
 	ret.shed_capacity_bug = detect_shed_capacity_bug(ret);
 	ret.market_results = precompute_market_results(ret);
-	ret.sales_summaries = precompute_sales_summaries(ret);
+	ret.sales_summaries = precompute_order_summaries(ret, "SELL", "sold");
+	ret.purchase_summaries = precompute_order_summaries(ret, "BUY_PRODUCT", "bought");
 	return ret;
 }
 
@@ -55,9 +56,9 @@ function precompute_market_results(replay) {
 	return results;
 }
 
-function precompute_sales_summaries(replay) {
+function precompute_order_summaries(replay, desired_op, units_key) {
 
-	// Snapshot each player's cumulative fulfilled SELL orders at every observed
+	// Snapshot each player's cumulative fulfilled orders of the requested type at every observed
 	// step. The orders returned for step i happen between i and i + 1, so they
 	// first belong in the summary for i + 1.
 
@@ -72,14 +73,14 @@ function precompute_sales_summaries(replay) {
 				for (let order_index = 0; order_index < orders.length; order_index++) {
 					let order = orders[order_index];
 					let result = results[order_index];
-					if (!Array.isArray(order) || order[0] !== "SELL" || !result || result.fulfilled <= 0) {
+					if (!Array.isArray(order) || order[0] !== desired_op || !result || result.fulfilled <= 0) {
 						continue;
 					}
 					let item = order[1];
 					if (!Object.prototype.hasOwnProperty.call(running[pl], item)) {
-						running[pl][item] = {sold: 0, money: 0};
+						running[pl][item] = {[units_key]: 0, money: 0};
 					}
-					running[pl][item].sold += result.fulfilled;
+					running[pl][item][units_key] += result.fulfilled;
 					running[pl][item].money += result.money;
 				}
 			}
@@ -217,6 +218,10 @@ const kaggle_replay_props = {
 
 	sales_summary: function(i, pl) {
 		return this.sales_summaries[i][pl];
+	},
+
+	purchase_summary: function(i, pl) {
+		return this.purchase_summaries[i][pl];
 	},
 
 	// Private data is per-player, on that player's own observation...

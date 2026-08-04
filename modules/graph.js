@@ -262,6 +262,10 @@ function price_str(v) {
 	return "$" + (Number.isInteger(v) ? `${v}` : v.toFixed(1));
 }
 
+function legend_items() {
+	return LEGEND_LEFT.concat(LEGEND_RIGHT).filter(item => item !== null);
+}
+
 function set_highlight(item) {
 	highlight_item = item || null;			// Applied by draw() on top of the blit; no rebuild involved.
 }
@@ -272,5 +276,6 @@ module.exports = {
 	draw,
 	set_highlight,
 	contains,
-	index_at_clientX
+	index_at_clientX,
+	legend_items
 };

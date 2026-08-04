@@ -66,4 +66,22 @@ assert.deepEqual(sales_replay.sales_summary(2, 0), {
 	CARROT: {sold: 1, money: 35},
 }, "sales use fulfilled quantities, include proceeds, and ignore purchases");
 
+let purchase_source = {
+	configuration: {boardSize: 10, shedCapacity: 100},
+	steps: [
+		[{observation: observation(1000), action: {}}],
+		[{observation: observation(721, {FERTILIZER: 2, WHEAT: 3}), action: {market: [
+			["BUY_PRODUCT", "FERTILIZER", 2],
+			["BUY_PRODUCT", "WHEAT", 3],
+		]}}],
+	],
+};
+
+let purchase_replay = replay_kaggle.load(purchase_source);
+assert.deepEqual(purchase_replay.purchase_summary(0, 0), {}, "the initial state has no completed purchases");
+assert.deepEqual(purchase_replay.purchase_summary(1, 0), {
+	FERTILIZER: {bought: 2, money: -200},
+	WHEAT: {bought: 3, money: -79},
+}, "product purchases use fulfilled quantities and retain their negative costs");
+
 console.log("replay kaggle tests passed");
