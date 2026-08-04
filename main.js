@@ -224,6 +224,7 @@ function menu_build() {
 				},
 				{
 					label: "Log scale graph",
+					accelerator: "CommandOrControl+G",
 					type: "checkbox",
 					checked: config.log_scale,
 					click: () => {
