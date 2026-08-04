@@ -473,7 +473,8 @@ function draw_player_sales(replay, index, pl, div) {
 		let opponent_sales = financial_rows(item_order, replay.sales_summary(index, opponent), "sold");
 		let opponent_purchases = financial_rows(purchased_items, replay.purchase_summary(index, opponent), "bought");
 		mark_favourable(sale_rows, opponent_sales, true);
-		mark_favourable(purchase_rows, opponent_purchases, false);
+		mark_favourable(purchase_rows.filter(row => row.item === "FERTILIZER" || row.item === "WHEAT"),
+				opponent_purchases, false);
 	}
 
 	div.style.paddingLeft = `${TEXT_PAD}px`;
