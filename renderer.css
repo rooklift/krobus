@@ -74,6 +74,10 @@ canvas {
 	color: var(--warning, #ffe066);
 }
 
+.favourable {
+	color: var(--favourable, #79bfe0);
+}
+
 #tilebox {
 	margin: 0;
 	padding: 0.75em 1em;

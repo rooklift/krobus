@@ -43,6 +43,7 @@ const BG_COLOURS_DARK = {
 	text:    "#efefef",
 	failure: "#ff8fb3",
 	warning: "#ffe066",
+	favourable: "#79bfe0",
 };
 
 const BG_COLOURS_LIGHT = {
@@ -56,6 +57,7 @@ const BG_COLOURS_LIGHT = {
 	text:    "#26221c",
 	failure: "#c00050",
 	warning: "#806400",
+	favourable: "#286783",
 };
 
 // What each town shop consumes is not declared in the replay, so this is copied from
@@ -466,25 +468,47 @@ function draw_player_sales(replay, index, pl, div) {
 	purchased_items.push("SEEDS", "ANIMALS", "HIRES", "LAND");
 	let purchase_rows = financial_rows(purchased_items, replay.purchase_summary(index, pl), "bought");
 	let widths = replay_financial_widths(replay, item_order, purchased_items);
+	if (replay.num_players() === 2) {
+		let opponent = 1 - pl;
+		let opponent_sales = financial_rows(item_order, replay.sales_summary(index, opponent), "sold");
+		let opponent_purchases = financial_rows(purchased_items, replay.purchase_summary(index, opponent), "bought");
+		mark_favourable(sale_rows, opponent_sales, true);
+		mark_favourable(purchase_rows, opponent_purchases, false);
+	}
 
 	div.style.paddingLeft = `${TEXT_PAD}px`;
 	div.style.paddingRight = `${TEXT_PAD}px`;
 	div.textContent = `${replay.team_name(pl)} --> $${Math.round(replay.money(index, pl))}\n\n`;
-	div.appendChild(document.createTextNode(financial_table("Sales", sale_rows, widths) +
-			"\n\n" + financial_table("Costs", purchase_rows, widths)));
+	append_financial_table(div, "Sales", sale_rows, widths);
+	div.appendChild(document.createTextNode("\n\n"));
+	append_financial_table(div, "Costs", purchase_rows, widths);
 }
 
 function financial_rows(items, summary, units_key) {
 	return items.map(item => {
 		let entry = summary[item] || {[units_key]: 0, money: 0};
 		let units = entry[units_key];
+		let average_value = units > 0 ? Math.abs(entry.money / units) : null;
 		return {
 			item,
 			units: `${units}`,
-			average: units > 0 ? money_str(Math.abs(entry.money / units)) : "-",
+			average_value,
+			average: average_value === null ? "-" : money_str(average_value),
 			total: money_str(entry.money),
+			favourable: false,
 		};
 	});
+}
+
+function mark_favourable(rows, opponent_rows, higher_is_better) {
+	let opponent_by_item = Object.fromEntries(opponent_rows.map(row => [row.item, row]));
+	for (let row of rows) {
+		let opponent = opponent_by_item[row.item];
+		if (row.average_value !== null && opponent && opponent.average_value !== null) {
+			row.favourable = higher_is_better ? row.average_value > opponent.average_value :
+					row.average_value < opponent.average_value;
+		}
+	}
 }
 
 function replay_financial_widths(replay, sale_items, purchase_items) {
@@ -509,16 +533,26 @@ function financial_widths(rows) {
 	};
 }
 
-function financial_table(title, rows, widths) {
-	let lines = [
-		title.padEnd(widths.item) + "  " + " ".repeat(widths.units) + "  " +
-				"Avg".padStart(widths.average) + "  " + "Total".padStart(widths.total),
-	];
-	for (let row of rows) {
-		lines.push(row.item.padEnd(widths.item) + "  " + row.units.padStart(widths.units) + "  " +
-				row.average.padStart(widths.average) + "  " + row.total.padStart(widths.total));
+function append_financial_table(div, title, rows, widths) {
+	let header = title.padEnd(widths.item) + "  " + " ".repeat(widths.units) + "  " +
+			"Avg".padStart(widths.average) + "  " + "Total".padStart(widths.total);
+	div.appendChild(document.createTextNode(header + "\n"));
+	for (let n = 0; n < rows.length; n++) {
+		let row = rows[n];
+		let prefix = row.item.padEnd(widths.item) + "  " + row.units.padStart(widths.units) + "  ";
+		let average = row.average.padStart(widths.average);
+		div.appendChild(document.createTextNode(prefix));
+		if (row.favourable) {
+			let span = document.createElement("span");
+			span.classList.add("favourable");
+			span.textContent = average;
+			div.appendChild(span);
+		} else {
+			div.appendChild(document.createTextNode(average));
+		}
+		let newline = n + 1 < rows.length ? "\n" : "";
+		div.appendChild(document.createTextNode("  " + row.total.padStart(widths.total) + newline));
 	}
-	return lines.join("\n");
 }
 
 function draw_tile_info(replay, index, pl, x, y, title = "Selected:") {
@@ -783,6 +817,7 @@ function set_dark(dark) {
 	document.body.style.color = o.text;					// defaults; this overrides them either way.
 	document.body.style.setProperty("--failure", o.failure);
 	document.body.style.setProperty("--warning", o.warning);
+	document.body.style.setProperty("--favourable", o.favourable);
 }
 
 // ------------------------------------------------------------------------------------------------
