@@ -66,12 +66,12 @@ canvas {
 	flex: 1 1 auto;		/* Farm info extends to the bottom of its column; farm actions will live here too. */
 }
 
-.market-order-failure {
-	color: var(--market-failure, #ff8fb3);
+.failure {
+	color: var(--failure, #ff8fb3);
 }
 
-.market-order-partial {
-	color: var(--market-partial, #ffe066);
+.warning {
+	color: var(--warning, #ffe066);
 }
 
 #tilebox {

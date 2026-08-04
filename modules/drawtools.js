@@ -37,8 +37,8 @@ const BG_COLOURS_DARK = {
 	coop:    "#7b6144",
 	pasture: "#5c6e46",
 	text:    "#efefef",
-	market_failure: "#ff8fb3",
-	market_partial: "#ffe066",
+	failure: "#ff8fb3",
+	warning: "#ffe066",
 };
 
 const BG_COLOURS_LIGHT = {
@@ -50,8 +50,8 @@ const BG_COLOURS_LIGHT = {
 	coop:    "#7b6144",
 	pasture: "#5c6e46",
 	text:    "#26221c",
-	market_failure: "#c00050",
-	market_partial: "#806400",
+	failure: "#c00050",
+	warning: "#806400",
 };
 
 // What each town shop consumes is not declared in the replay, so this is copied from
@@ -354,6 +354,7 @@ function draw_player_info(replay, index, pl, div, market_results) {
 
 	let shed = replay.shed(index, pl);
 	let shed_total = Object.values(shed).reduce((a, b) => a + b, 0);
+	let shed_capacity = replay.shed_capacity();
 
 	let carried = {};
 	for (let inv of replay.inventories(index, pl)) {
@@ -384,10 +385,18 @@ function draw_player_info(replay, index, pl, div, market_results) {
 		}
 	}
 
+	div.style.paddingLeft = `${TEXT_PAD}px`;
+	div.style.paddingRight = `${TEXT_PAD}px`;
+	div.textContent = `${replay.team_name(pl)} --> $${Math.round(replay.money(index, pl))}\n\nShed usage: `;
+	let shed_usage = document.createElement("span");
+	shed_usage.textContent = `${shed_total}/${shed_capacity}`;
+	if (shed_total > shed_capacity) {
+		shed_usage.classList.add("warning");
+	}
+	div.appendChild(shed_usage);
+
 	let lines = [
-		`${replay.team_name(pl)} --> $${Math.round(replay.money(index, pl))}`,
-		``,
-		`Shed usage: ${shed_total}/${replay.shed_capacity()}, hired hands: ${replay.units(index, pl).length - 1}`,
+		`, hired hands: ${replay.units(index, pl).length - 1}`,
 		``,
 		`Shed: ${itemlist(shed)}`,
 		`Seed: ${itemlist(replay.seeds(index, pl))}`,
@@ -401,12 +410,14 @@ function draw_player_info(replay, index, pl, div, market_results) {
 	let order_lines = market_orders_entries(orders, market_results);
 	lines.push(``);
 
-	div.style.paddingLeft = `${TEXT_PAD}px`;
-	div.style.paddingRight = `${TEXT_PAD}px`;
-	div.textContent = lines.join("\n") + (order_lines.length > 0 ? "\n" : "");
+	div.appendChild(document.createTextNode(lines.join("\n") + (order_lines.length > 0 ? "\n" : "")));
 	for (let entry of order_lines) {
 		let line = document.createElement("div");
-		line.classList.add("market-order", `market-order-${entry.status}`);
+		if (entry.status === "failure") {
+			line.classList.add("failure");
+		} else if (entry.status === "partial") {
+			line.classList.add("warning");
+		}
 		line.textContent = entry.text;
 		div.appendChild(line);
 	}
@@ -672,8 +683,8 @@ function set_dark(dark) {
 	let o = dark ? BG_COLOURS_DARK : BG_COLOURS_LIGHT;
 	document.body.style.backgroundColor = o.body;		// The stylesheet's colours are just the dark-mode
 	document.body.style.color = o.text;					// defaults; this overrides them either way.
-	document.body.style.setProperty("--market-failure", o.market_failure);
-	document.body.style.setProperty("--market-partial", o.market_partial);
+	document.body.style.setProperty("--failure", o.failure);
+	document.body.style.setProperty("--warning", o.warning);
 }
 
 // ------------------------------------------------------------------------------------------------
