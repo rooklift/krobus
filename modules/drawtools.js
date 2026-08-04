@@ -379,6 +379,10 @@ function unit_triangle_path(ctx, cx, cy, dx, dy, r) {
 // ------------------------------------------------------------------------------------------------
 
 function draw_player_info(replay, index, pl, div, market_results) {
+	if (config.farm_info === 2) {
+		draw_player_sales(replay, index, pl, div);
+		return;
+	}
 
 	// Name and money, then shed, seeds, and carried items, as text in the player's
 	// div below their canvas. Carried items live in per-unit inventories which we
@@ -453,6 +457,39 @@ function draw_player_info(replay, index, pl, div, market_results) {
 		line.textContent = entry.text;
 		div.appendChild(line);
 	}
+}
+
+function draw_player_sales(replay, index, pl, div) {
+	let summary = replay.sales_summary(index, pl);
+	let rows = Object.entries(summary).map(([item, sale]) => ({
+		item,
+		sold: `${sale.sold}`,
+		average: money_str(sale.money / sale.sold),
+		total: money_str(sale.money),
+	}));
+
+	div.style.paddingLeft = `${TEXT_PAD}px`;
+	div.style.paddingRight = `${TEXT_PAD}px`;
+	div.textContent = `${replay.team_name(pl)} --> $${Math.round(replay.money(index, pl))}\n\nSales to date:`;
+
+	if (rows.length === 0) {
+		div.appendChild(document.createTextNode("\nNo items sold."));
+		return;
+	}
+
+	let item_width = Math.max("Item".length, ...rows.map(row => row.item.length));
+	let sold_width = Math.max("Sold".length, ...rows.map(row => row.sold.length));
+	let average_width = Math.max("Avg price".length, ...rows.map(row => row.average.length));
+	let total_width = Math.max("Total".length, ...rows.map(row => row.total.length));
+	let lines = [
+		"Item".padEnd(item_width) + "  " + "Sold".padStart(sold_width) + "  " +
+				"Avg price".padStart(average_width) + "  " + "Total".padStart(total_width),
+	];
+	for (let row of rows) {
+		lines.push(row.item.padEnd(item_width) + "  " + row.sold.padStart(sold_width) + "  " +
+				row.average.padStart(average_width) + "  " + row.total.padStart(total_width));
+	}
+	div.appendChild(document.createTextNode("\n" + lines.join("\n")));
 }
 
 function draw_tile_info(replay, index, pl, x, y, title = "Selected:") {
@@ -760,6 +797,10 @@ function market_orders_entries(orders, results) {
 function itemlist(o) {
 	let parts = Object.entries(o).filter(([item, n]) => n > 0).map(([item, n]) => `${item}\u00a0${n}`);
 	return parts.length > 0 ? parts.join(", ") : "-";
+}
+
+function money_str(n) {
+	return "$" + (Number.isInteger(n) ? `${n}` : n.toFixed(1));
 }
 
 function market_inv_to_str(n, equilibrium) {

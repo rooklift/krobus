@@ -43,4 +43,27 @@ source.steps[1][0].action.market[0][2] = 2;
 assert.strictEqual(replay.next_market_results(0), cached, "later replay mutations do not rerun the market");
 assert.deepEqual(replay.next_market_results(1), [[]]);
 
+let sales_source = {
+	configuration: {boardSize: 10, shedCapacity: 100},
+	steps: [
+		[{observation: observation(0, {WHEAT: 2, CARROT: 1}), action: {}}],
+		[{observation: observation(49, {WHEAT: 1, CARROT: 1}), action: {market: [["SELL", "WHEAT", 2]]}}],
+		[{observation: observation(99), action: {market: [
+			["SELL", "WHEAT", 2],
+			["SELL", "CARROT", 1],
+			["BUY_SEED", "WHEAT", 1],
+		]}}],
+	],
+};
+
+let sales_replay = replay_kaggle.load(sales_source);
+assert.deepEqual(sales_replay.sales_summary(0, 0), {}, "the initial state has no completed sales");
+assert.deepEqual(sales_replay.sales_summary(1, 0), {
+	WHEAT: {sold: 2, money: 49},
+});
+assert.deepEqual(sales_replay.sales_summary(2, 0), {
+	WHEAT: {sold: 3, money: 74},
+	CARROT: {sold: 1, money: 35},
+}, "sales use fulfilled quantities, include proceeds, and ignore purchases");
+
 console.log("replay kaggle tests passed");

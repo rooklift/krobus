@@ -231,6 +231,27 @@ function menu_build() {
 					}
 				},
 				{
+					label: "Farm info",
+					submenu: [
+						{
+							label: "Inventory and actions",
+							type: "checkbox",
+							checked: config.farm_info === 1,
+							click: () => {
+								win.webContents.send("set", {farm_info: 1});
+							}
+						},
+						{
+							label: "Profits",
+							type: "checkbox",
+							checked: config.farm_info === 2,
+							click: () => {
+								win.webContents.send("set", {farm_info: 2});
+							}
+						}
+					]
+				},
+				{
 					type: "separator"
 				},
 				{

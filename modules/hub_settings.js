@@ -4,7 +4,9 @@ const {ipcRenderer} = require("electron");
 const drawtools = require("./drawtools");
 const graph = require("./graph");
 
-const multichecks = {};
+const multichecks = {
+	farm_info:			["Options", "Farm info"],
+};
 
 const togglechecks = {
 	dark_mode:			["Options", "Dark mode"],
@@ -38,6 +40,7 @@ module.exports = {
 				break;
 
 			case "log_scale":
+			case "farm_info":
 
 				this.draw();
 				break;

@@ -30,6 +30,7 @@ exports.defaults = {
 	"maxed": false,
 	"dark_mode": true,
 	"log_scale": false,
+	"farm_info": 1,
 	"replay_folder": null,
 };
 

@@ -20,6 +20,7 @@ function load(o) {					// Where o is an object already decoded from JSON.
 	Object.assign(ret, kaggle_replay_props);
 	ret.shed_capacity_bug = detect_shed_capacity_bug(ret);
 	ret.market_results = precompute_market_results(ret);
+	ret.sales_summaries = precompute_sales_summaries(ret);
 	return ret;
 }
 
@@ -52,6 +53,45 @@ function precompute_market_results(replay) {
 	}
 	results[replay.length() - 1] = Array.from({length: replay.num_players()}, () => []);
 	return results;
+}
+
+function precompute_sales_summaries(replay) {
+
+	// Snapshot each player's cumulative fulfilled SELL orders at every observed
+	// step. The orders returned for step i happen between i and i + 1, so they
+	// first belong in the summary for i + 1.
+
+	let summaries = new Array(replay.length());
+	let running = Array.from({length: replay.num_players()}, () => ({}));
+
+	for (let i = 0; i < replay.length(); i++) {
+		if (i > 0) {
+			for (let pl = 0; pl < replay.num_players(); pl++) {
+				let orders = replay.next_market_orders(i - 1, pl);
+				let results = replay.next_market_results(i - 1)[pl] || [];
+				for (let order_index = 0; order_index < orders.length; order_index++) {
+					let order = orders[order_index];
+					let result = results[order_index];
+					if (!Array.isArray(order) || order[0] !== "SELL" || !result || result.fulfilled <= 0) {
+						continue;
+					}
+					let item = order[1];
+					if (!Object.prototype.hasOwnProperty.call(running[pl], item)) {
+						running[pl][item] = {sold: 0, money: 0};
+					}
+					running[pl][item].sold += result.fulfilled;
+					running[pl][item].money += result.money;
+				}
+			}
+		}
+
+		// Keep every step independent so callers cannot change later summaries by
+		// retaining and mutating an earlier one.
+		summaries[i] = running.map(items => Object.fromEntries(
+				Object.entries(items).map(([item, sale]) => [item, Object.assign({}, sale)])));
+	}
+
+	return summaries;
 }
 
 const kaggle_replay_props = {
@@ -173,6 +213,10 @@ const kaggle_replay_props = {
 
 	next_market_results: function(i) {
 		return this.market_results[i];
+	},
+
+	sales_summary: function(i, pl) {
+		return this.sales_summaries[i][pl];
 	},
 
 	// Private data is per-player, on that player's own observation...
