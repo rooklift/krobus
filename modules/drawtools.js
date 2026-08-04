@@ -465,13 +465,13 @@ function draw_player_sales(replay, index, pl, div) {
 	let purchased_items = item_order.filter(item => item === "FERTILIZER" || item === "WHEAT");
 	purchased_items.push("SEEDS", "ANIMALS", "HIRES", "LAND");
 	let purchase_rows = financial_rows(purchased_items, replay.purchase_summary(index, pl), "bought");
-	let widths = financial_widths(sale_rows.concat(purchase_rows));
+	let widths = replay_financial_widths(replay, item_order, purchased_items);
 
 	div.style.paddingLeft = `${TEXT_PAD}px`;
 	div.style.paddingRight = `${TEXT_PAD}px`;
-	div.textContent = `${replay.team_name(pl)} --> $${Math.round(replay.money(index, pl))}\n\nSales to date:`;
-	div.appendChild(document.createTextNode("\n" + financial_table(sale_rows, widths) +
-			"\n\nPurchases to date:\n" + financial_table(purchase_rows, widths)));
+	div.textContent = `${replay.team_name(pl)} --> $${Math.round(replay.money(index, pl))}\n\n`;
+	div.appendChild(document.createTextNode(financial_table("Sales", sale_rows, widths) +
+			"\n\n" + financial_table("Costs", purchase_rows, widths)));
 }
 
 function financial_rows(items, summary, units_key) {
@@ -487,19 +487,32 @@ function financial_rows(items, summary, units_key) {
 	});
 }
 
+function replay_financial_widths(replay, sale_items, purchase_items) {
+	if (!replay.farm_info_widths) {
+		let final_index = replay.length() - 1;
+		let rows = [];
+		for (let pl = 0; pl < replay.num_players(); pl++) {
+			rows = rows.concat(financial_rows(sale_items, replay.sales_summary(final_index, pl), "sold"));
+			rows = rows.concat(financial_rows(purchase_items, replay.purchase_summary(final_index, pl), "bought"));
+		}
+		replay.farm_info_widths = financial_widths(rows);
+	}
+	return replay.farm_info_widths;
+}
+
 function financial_widths(rows) {
 	return {
 		item: Math.max(...rows.map(row => row.item.length)),
 		units: Math.max(...rows.map(row => row.units.length)),
-		average: Math.max("Avg price".length, ...rows.map(row => row.average.length)),
+		average: Math.max("Avg".length, ...rows.map(row => row.average.length)),
 		total: Math.max("Total".length, ...rows.map(row => row.total.length)),
 	};
 }
 
-function financial_table(rows, widths) {
+function financial_table(title, rows, widths) {
 	let lines = [
-		" ".repeat(widths.item + widths.units + 4) +
-				"Avg price".padStart(widths.average) + "  " + "Total".padStart(widths.total),
+		title.padEnd(widths.item) + "  " + " ".repeat(widths.units) + "  " +
+				"Avg".padStart(widths.average) + "  " + "Total".padStart(widths.total),
 	];
 	for (let row of rows) {
 		lines.push(row.item.padEnd(widths.item) + "  " + row.units.padStart(widths.units) + "  " +
