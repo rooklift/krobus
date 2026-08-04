@@ -463,6 +463,7 @@ function draw_player_sales(replay, index, pl, div) {
 	let item_order = graph.legend_items();
 	let sale_rows = financial_rows(item_order, replay.sales_summary(index, pl), "sold");
 	let purchased_items = item_order.filter(item => item === "FERTILIZER" || item === "WHEAT");
+	purchased_items.push("SEEDS", "ANIMALS", "HIRES", "LAND");
 	let purchase_rows = financial_rows(purchased_items, replay.purchase_summary(index, pl), "bought");
 	let widths = financial_widths(sale_rows.concat(purchase_rows));
 
@@ -480,7 +481,7 @@ function financial_rows(items, summary, units_key) {
 		return {
 			item,
 			units: `${units}`,
-			average: units > 0 ? money_str(entry.money / units) : "-",
+			average: units > 0 ? money_str(Math.abs(entry.money / units)) : "-",
 			total: money_str(entry.money),
 		};
 	});

@@ -5,7 +5,7 @@ const replay_kaggle = require("./replay_kaggle");
 
 const ITEMS = ["WHEAT", "CARROT", "TOMATO", "STRAWBERRY", "MELON", "EGG", "MILK", "WOOL", "FERTILIZER"];
 
-function observation(money, shed = {}) {
+function observation(money, shed = {}, seeds = {}) {
 	let inventory = Object.fromEntries(ITEMS.map(item => [item, 10000]));
 	let prices = {WHEAT: 25, CARROT: 35, TOMATO: 60, STRAWBERRY: 120, MELON: 250,
 		EGG: 50, MILK: 160, WOOL: 200, FERTILIZER: 100};
@@ -21,7 +21,7 @@ function observation(money, shed = {}) {
 			unlocked_quadrants: ["NW"],
 			tiles: Array.from({length: 10}, () => Array(10).fill(null)),
 		}],
-		private: {shed, seeds: {}, inventories: [{}]},
+		private: {shed, seeds, inventories: [{}]},
 		town: {unlocked_shops: []},
 	};
 }
@@ -69,10 +69,19 @@ assert.deepEqual(sales_replay.sales_summary(2, 0), {
 let purchase_source = {
 	configuration: {boardSize: 10, shedCapacity: 100},
 	steps: [
-		[{observation: observation(1000), action: {}}],
-		[{observation: observation(721, {FERTILIZER: 2, WHEAT: 3}), action: {market: [
+		[{observation: observation(10000), action: {}}],
+		[{observation: observation(5499,
+				{FERTILIZER: 2, WHEAT: 3, GOOSE: 1, COW: 2}, {TOMATO: 2, CARROT: 1}), action: {market: [
 			["BUY_PRODUCT", "FERTILIZER", 2],
 			["BUY_PRODUCT", "WHEAT", 3],
+			["BUY_SEED", "TOMATO", 2],
+			["BUY_SEED", "CARROT", 1],
+			["BUY_ANIMAL", "GOOSE", 1],
+			["BUY_ANIMAL", "COW", 2],
+			["HIRE"],
+			["HIRE"],
+			["BUY_LAND"],
+			["BUY_LAND"],
 		]}}],
 	],
 };
@@ -82,6 +91,10 @@ assert.deepEqual(purchase_replay.purchase_summary(0, 0), {}, "the initial state 
 assert.deepEqual(purchase_replay.purchase_summary(1, 0), {
 	FERTILIZER: {bought: 2, money: -200},
 	WHEAT: {bought: 3, money: -79},
-}, "product purchases use fulfilled quantities and retain their negative costs");
+	SEEDS: {bought: 3, money: -120},
+	ANIMALS: {bought: 3, money: -1100},
+	HIRES: {bought: 2, money: -2},
+	LAND: {bought: 2, money: -3000},
+}, "purchases use fulfilled quantities, group categories, and retain their negative costs");
 
 console.log("replay kaggle tests passed");

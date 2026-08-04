@@ -20,8 +20,8 @@ function load(o) {					// Where o is an object already decoded from JSON.
 	Object.assign(ret, kaggle_replay_props);
 	ret.shed_capacity_bug = detect_shed_capacity_bug(ret);
 	ret.market_results = precompute_market_results(ret);
-	ret.sales_summaries = precompute_order_summaries(ret, "SELL", "sold");
-	ret.purchase_summaries = precompute_order_summaries(ret, "BUY_PRODUCT", "bought");
+	ret.sales_summaries = precompute_order_summaries(ret, sale_summary_key, "sold");
+	ret.purchase_summaries = precompute_order_summaries(ret, purchase_summary_key, "bought");
 	return ret;
 }
 
@@ -56,7 +56,20 @@ function precompute_market_results(replay) {
 	return results;
 }
 
-function precompute_order_summaries(replay, desired_op, units_key) {
+function sale_summary_key(order) {
+	return order[0] === "SELL" ? order[1] : null;
+}
+
+function purchase_summary_key(order) {
+	if (order[0] === "BUY_PRODUCT") return order[1];
+	if (order[0] === "BUY_SEED") return "SEEDS";
+	if (order[0] === "BUY_ANIMAL") return "ANIMALS";
+	if (order[0] === "HIRE") return "HIRES";
+	if (order[0] === "BUY_LAND") return "LAND";
+	return null;
+}
+
+function precompute_order_summaries(replay, summary_key, units_key) {
 
 	// Snapshot each player's cumulative fulfilled orders of the requested type at every observed
 	// step. The orders returned for step i happen between i and i + 1, so they
@@ -73,10 +86,13 @@ function precompute_order_summaries(replay, desired_op, units_key) {
 				for (let order_index = 0; order_index < orders.length; order_index++) {
 					let order = orders[order_index];
 					let result = results[order_index];
-					if (!Array.isArray(order) || order[0] !== desired_op || !result || result.fulfilled <= 0) {
+					if (!Array.isArray(order) || !result || result.fulfilled <= 0) {
 						continue;
 					}
-					let item = order[1];
+					let item = summary_key(order);
+					if (item === null) {
+						continue;
+					}
 					if (!Object.prototype.hasOwnProperty.call(running[pl], item)) {
 						running[pl][item] = {[units_key]: 0, money: 0};
 					}
