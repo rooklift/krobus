@@ -23,9 +23,8 @@ function load(o) {					// Where o is an object already decoded from JSON.
 }
 
 function precompute_market_results(replay) {
-	// Resolve every turn at load time, sharing a price cache across the whole
-	// replay, then make next_market_results() a simple indexed lookup.
-	let price_cache = new Map();
+	// Resolve every turn at load time, then make next_market_results() a simple
+	// indexed lookup.
 	let results = new Array(replay.length());
 	for (let i = 0; i + 1 < replay.length(); i++) {
 		results[i] = market.resolve_turn({
@@ -34,7 +33,7 @@ function precompute_market_results(replay) {
 			farms: replay.r.steps[i][0].observation.farms,
 			privates: replay.r.steps[i].map(step => step.observation.private),
 			actions: replay.r.steps[i + 1].map(step => step.action),
-		}, price_cache);
+		});
 	}
 	results[replay.length() - 1] = Array.from({length: replay.num_players()}, () => []);
 	return results;

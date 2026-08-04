@@ -5,17 +5,6 @@ const market = require("./market");
 
 const ITEMS = ["WHEAT", "CARROT", "TOMATO", "STRAWBERRY", "MELON", "EGG", "MILK", "WOOL", "FERTILIZER"];
 
-{
-	let cache = new Map();
-	assert.equal(market.market_price("WHEAT", 10000, undefined, cache), 25);
-	assert.equal(market.market_price("WHEAT", 10000, undefined, cache), 25);
-	assert.equal(cache.size, 1, "identical price calculations share a cached result");
-	let custom = {WHEAT: {base: 30, I0: 10000, T: 400, below_func: "sqrt", below_target: 0.8,
-		above_func: "log", above_target: 0.2}};
-	assert.equal(market.market_price("WHEAT", 10000, custom, cache), 30);
-	assert.equal(cache.size, 2, "custom parameters cannot collide with default prices");
-}
-
 function player(money, shed = {}, extras = {}) {
 	return {
 		farm: Object.assign({

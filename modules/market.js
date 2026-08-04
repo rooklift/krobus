@@ -59,15 +59,8 @@ function python_round(x) {
 	return lower % 2 === 0 ? lower : lower + 1;
 }
 
-function market_price(item, inventory, params = MARKET_PARAMS, cache = null) {
+function market_price(item, inventory, params = MARKET_PARAMS) {
 	let p = params[item];
-	let cache_key;
-	if (cache) {
-		// A replay can override the market parameters. Include the effective item
-		// parameters in the key so one cache remains safe across every replay step.
-		cache_key = JSON.stringify([item, inventory, p]);
-		if (cache.has(cache_key)) return cache.get(cache_key);
-	}
 	let price;
 	if (inventory < p.I0) {
 		let amp = p.below_target * p.base / shape(p.below_func, p.T);
@@ -76,15 +69,13 @@ function market_price(item, inventory, params = MARKET_PARAMS, cache = null) {
 		let amp = p.above_target * p.base / shape(p.above_func, p.T);
 		price = p.base - amp * shape(p.above_func, inventory - p.I0);
 	}
-	price = Math.max(1, python_round(price));
-	if (cache) cache.set(cache_key, price);
-	return price;
+	return Math.max(1, python_round(price));
 }
 
-function refresh_prices(market, price_cache) {
+function refresh_prices(market) {
 	let params = market.params || MARKET_PARAMS;
 	for (let item of PRODUCTS) {
-		market.prices[item] = market_price(item, market.inventory[item], params, price_cache);
+		market.prices[item] = market_price(item, market.inventory[item], params);
 	}
 }
 
@@ -255,7 +246,7 @@ function commit_unit(op, item, price, farm, privateState, market) {
 	return false;
 }
 
-function resolve_turn(input, price_cache = null) {
+function resolve_turn(input) {
 	let configuration = input.configuration || {};
 	let market = clone(input.market);
 	let farms = clone(input.farms);
@@ -310,14 +301,14 @@ function resolve_turn(input, price_cache = null) {
 					return {
 						op: "SELL",
 						item,
-						price: market_price(item, market.inventory[item], market.params || MARKET_PARAMS, price_cache), state, player
+						price: market_price(item, market.inventory[item], market.params || MARKET_PARAMS), state, player
 					};
 				}
 				if (state.type === "BUY_PRODUCT" && (item === "WHEAT" || item === "FERTILIZER")) {
 					return {
 						op: "BUY_PRODUCT",
 						item,
-						price: market_price(item, market.inventory[item] - 1, market.params || MARKET_PARAMS, price_cache), state, player
+						price: market_price(item, market.inventory[item] - 1, market.params || MARKET_PARAMS), state, player
 					};
 				}
 				if (state.type === "BUY_SEED" && Object.prototype.hasOwnProperty.call(CROPS, item)) {
@@ -354,7 +345,7 @@ function resolve_turn(input, price_cache = null) {
 			if (!committedAny) break;
 		}
 
-		refresh_prices(market, price_cache);
+		refresh_prices(market);
 	}
 
 	for (let playerResults of results) {
