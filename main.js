@@ -236,6 +236,7 @@ function menu_build() {
 						{
 							label: "Inventory and actions",
 							type: "checkbox",
+							accelerator: "F1",
 							checked: config.farm_info === 1,
 							click: () => {
 								win.webContents.send("set", {farm_info: 1});
@@ -244,6 +245,7 @@ function menu_build() {
 						{
 							label: "Profits",
 							type: "checkbox",
+							accelerator: "F2",
 							checked: config.farm_info === 2,
 							click: () => {
 								win.webContents.send("set", {farm_info: 2});
