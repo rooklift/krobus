@@ -18,8 +18,22 @@ function load(o) {					// Where o is an object already decoded from JSON.
 	}
 	let ret = {r: o};
 	Object.assign(ret, kaggle_replay_props);
+	ret.shed_capacity_bug = detect_shed_capacity_bug(ret);
 	ret.market_results = precompute_market_results(ret);
 	return ret;
+}
+
+function detect_shed_capacity_bug(replay) {		// Replays before about 2026-08-04
+	let capacity = replay.shed_capacity();
+	for (let i = 0; i < replay.length(); i++) {
+		for (let pl = 0; pl < replay.num_players(); pl++) {
+			let total = Object.values(replay.shed(i, pl)).reduce((a, b) => a + b, 0);
+			if (total > capacity) {
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 function precompute_market_results(replay) {
@@ -33,6 +47,7 @@ function precompute_market_results(replay) {
 			farms: replay.r.steps[i][0].observation.farms,
 			privates: replay.r.steps[i].map(step => step.observation.private),
 			actions: replay.r.steps[i + 1].map(step => step.action),
+			shed_capacity_bug: replay.shed_capacity_bug,
 		});
 	}
 	results[replay.length() - 1] = Array.from({length: replay.num_players()}, () => []);

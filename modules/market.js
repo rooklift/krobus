@@ -110,8 +110,9 @@ function take(inventory, item, n) {
 }
 
 function apply_pre_market_unit_actions(farm, privateState, action, configuration) {
-	// Unit actions run before the market. Only PICKUP/DROP/PLACE can alter the
-	// shed available to a SELL order, so only those effects need reproducing here.
+	// Unit actions run before the market. Only PICKUP/DROP/PLACE can alter the shed
+	// contents seen by market orders (stock for SELL, room for buys), so only those
+	// effects need reproducing here.
 	let boardSize = config_int(configuration, "boardSize", 10);
 	let shedCapacity = config_int(configuration, "shedCapacity", 100);
 	let unitActions = [action.farmer].concat(Array.isArray(action.hands) ? action.hands : []);
@@ -216,7 +217,7 @@ function do_buy_land(farm) {
 	return true;
 }
 
-function commit_unit(op, item, price, farm, privateState, market) {
+function commit_unit(op, item, price, farm, privateState, market, shedCapacity) {
 	if (op === "SELL") {
 		if ((privateState.shed[item] || 0) <= 0) return false;
 		privateState.shed[item] -= 1;
@@ -226,6 +227,7 @@ function commit_unit(op, item, price, farm, privateState, market) {
 	}
 	if (op === "BUY_PRODUCT") {
 		if (farm.money < price) return false;
+		if (sum_values(privateState.shed) >= shedCapacity) return false;
 		farm.money -= price;
 		privateState.shed[item] = (privateState.shed[item] || 0) + 1;
 		market.inventory[item] -= 1;
@@ -239,6 +241,7 @@ function commit_unit(op, item, price, farm, privateState, market) {
 	}
 	if (op === "BUY_ANIMAL") {
 		if (farm.money < price) return false;
+		if (sum_values(privateState.shed) >= shedCapacity) return false;
 		farm.money -= price;
 		privateState.shed[item] = (privateState.shed[item] || 0) + 1;
 		return true;
@@ -254,6 +257,9 @@ function resolve_turn(input) {
 	let actions = input.actions.map(action => action && typeof action === "object" && !Array.isArray(action) ? action : {});
 	let maxOrders = Math.max(1, config_int(configuration, "maxMarketOrdersPerTurn", 10));
 	let hireMultiplier = config_int(configuration, "farmHandCostMult", 1);
+	// Runners predating the capacity check on market purchases let buys overfill
+	// the shed; replays from them must be resolved with that behaviour intact.
+	let buyCapacity = input.shed_capacity_bug ? Infinity : config_int(configuration, "shedCapacity", 100);
 
 	for (let player = 0; player < farms.length; player++) {
 		apply_pre_market_unit_actions(farms[player], privates[player], actions[player] || {}, configuration);
@@ -333,7 +339,7 @@ function resolve_turn(input) {
 			let committedAny = false;
 			for (let quote of quoted) {
 				if (!quote) continue;
-				if (commit_unit(quote.op, quote.item, quote.price, farms[quote.player], privates[quote.player], market)) {
+				if (commit_unit(quote.op, quote.item, quote.price, farms[quote.player], privates[quote.player], market, buyCapacity)) {
 					quote.state.remaining -= 1;
 					quote.state.result.fulfilled += 1;
 					quote.state.result.money += quote.op === "SELL" ? quote.price : -quote.price;
