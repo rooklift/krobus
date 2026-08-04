@@ -2,4 +2,4 @@
 
 Third party replay viewer for Kaggriculture. Made in thoughtful collaboration with Claude and Codex.
 
-Run with `electron .` - or see the builder.py script to build a real app. Ask an AI to do it.
+Run with `electron .` or see the `builder.py` script to build a real app. Ask an AI to do it.
