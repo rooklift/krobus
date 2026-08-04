@@ -5,7 +5,7 @@ const drawtools = require("./drawtools");
 const graph = require("./graph");
 
 const multichecks = {
-	farm_info:			["Options", "Farm info"],
+	// Some special submenus are not included here, when their values don't match their labels.
 };
 
 const togglechecks = {
@@ -52,6 +52,17 @@ module.exports = {
 
 		if (togglechecks.hasOwnProperty(key)) {
 			ipcRenderer.send(value ? "set_check_true" : "set_check_false", togglechecks[key]);
+		}
+
+		// Our multi-check fixer doesn't work if the value doesn't match the label...
+
+		if (key === "farm_info") {
+			let label_strings = {
+				1: "Inventory and actions",
+				2: "Profits",
+			};
+			let label = label_strings[config.farm_info];
+			ipcRenderer.send("set_checks", ["Options", "Farm info", label]);
 		}
 
 	},
