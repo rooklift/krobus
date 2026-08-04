@@ -322,9 +322,7 @@ function draw_units(ctx, units, moves, inventories, ox, oy) {
 		} else {
 			ctx.arc(cx, cy, radius, 0, Math.PI * 2);
 		}
-		ctx.fillStyle = (n === 0)
-			? (carrying ? "#ee8833" : "#ffe066")
-			: (carrying ? "#9edcf5" : "#f0f0f0");
+		ctx.fillStyle = carrying ? "#9edcf5" : "#f0f0f0";
 		ctx.fill();
 		ctx.strokeStyle = "#222222";
 		ctx.lineWidth = 1.5;
