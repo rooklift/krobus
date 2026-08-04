@@ -7,6 +7,10 @@ const PAD = 1;		// Board offset from the canvas edge. Tiles are inset 1px on eve
 					// makes the edge gap 2px -- the same as the internal lines between tiles.
 const TEXT_PAD = 4;	// Farmbox text inset, no longer tied to the (now tiny) canvas pad.
 
+// Units sharing a tile occupy these five spots in order. Keep this in one place so
+// the selection marker and the unit itself always use exactly the same position.
+const UNIT_OFFSETS = [[-0.22, -0.22], [0.22, -0.22], [-0.22, 0.22], [0.22, 0.22], [0, 0]];
+
 // The dark and light colours. The canvas and everything on it (tiles, letters, rings,
 // unit circles, yield counts) stays dark in both themes -- those colours are all
 // calibrated against the dark canvas -- so really only the body and text change.
@@ -155,26 +159,27 @@ function draw(replay, index, selection, hover, swap) {		// selection: see hub.cl
 		ctx.fillRect(0, 0, cv.width, cv.height);
 
 		draw_board(ctx, replay.tiles(index, pl), bs, day, PAD, PAD);
-		draw_units(ctx, replay.units(index, pl), replay.unit_moves(index, pl),
-			replay.inventories(index, pl), PAD, PAD);
 
-		let hl = null;										// The highlighted tile for this player, if any. For a
-		if (selection && selection.player === pl) {			// unit selection this follows the unit around the board.
+		let hl = null;
+		if (selection && selection.player === pl) {
 			if (selection.type === "tile") {
-				hl = [selection.x, selection.y];
+				hl = {x: selection.x, y: selection.y, dx: 0, dy: 0};
 			} else if (selection.type === "unit") {
 				let units = replay.units(index, pl);
 				if (Number.isInteger(selection.id) && selection.id >= 0 && selection.id < units.length) {
-					hl = units[selection.id];
+					let [x, y] = units[selection.id];
+					let [dx, dy] = unit_offset(units, selection.id);
+					hl = {x, y, dx, dy};
 				}
 			}
 		}
 
-		if (hl && hl[0] >= 0 && hl[0] < bs && hl[1] >= 0 && hl[1] < bs) {
-			ctx.strokeStyle = "#ffffff";
-			ctx.lineWidth = 2;
-			ctx.strokeRect(PAD + hl[0] * TILE_SIZE, PAD + hl[1] * TILE_SIZE, TILE_SIZE, TILE_SIZE);		// The 2px stroke straddles the cell
-		}																								// boundary, consuming the gridlines.
+		if (hl && hl.x >= 0 && hl.x < bs && hl.y >= 0 && hl.y < bs) {
+			draw_selection(ctx, hl.x, hl.y, hl.dx, hl.dy, PAD, PAD);
+		}
+
+		draw_units(ctx, replay.units(index, pl), replay.unit_moves(index, pl),
+			replay.inventories(index, pl), PAD, PAD);
 
 		draw_player_info(replay, index, pl, col.children[1], market_results[pl] || []);
 	}
@@ -302,16 +307,9 @@ function draw_units(ctx, units, moves, inventories, ox, oy) {
 	// A unit about to move is drawn as a triangle pointing its way instead of a circle.
 	// Centre comes last so the tile's letter stays uncovered when possible.
 
-	const offsets = [[-0.22, -0.22], [0.22, -0.22], [-0.22, 0.22], [0.22, 0.22], [0, 0]];
-
-	let seen_at = {};
-
 	for (let n = 0; n < units.length; n++) {
 		let [x, y] = units[n];
-		let key = `${x},${y}`;
-		let stack = seen_at[key] || 0;
-		seen_at[key] = stack + 1;
-		let [dx, dy] = offsets[stack % offsets.length];
+		let [dx, dy] = unit_offset(units, n);
 		let cx = ox + (x + 0.5 + dx) * TILE_SIZE;
 		let cy = oy + (y + 0.5 + dy) * TILE_SIZE;
 		let radius = TILE_SIZE * 0.14;
@@ -328,6 +326,38 @@ function draw_units(ctx, units, moves, inventories, ox, oy) {
 		ctx.lineWidth = 1.5;
 		ctx.stroke();
 	}
+}
+
+function unit_offset(units, n) {
+	let [x, y] = units[n];
+	let stack = 0;
+	for (let i = 0; i < n; i++) {
+		if (units[i][0] === x && units[i][1] === y) {
+			stack++;
+		}
+	}
+	return UNIT_OFFSETS[stack % UNIT_OFFSETS.length];
+}
+
+function draw_selection(ctx, x, y, dx, dy, ox, oy) {
+	let cx = ox + (x + 0.5 + dx) * TILE_SIZE;
+	let cy = oy + (y + 0.5 + dy) * TILE_SIZE;
+
+	ctx.save();
+	ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+	ctx.lineWidth = 2;
+	ctx.setLineDash([4, 8]);
+	ctx.beginPath();
+	ctx.moveTo(0, cy);
+	ctx.lineTo(cx, cy);
+	ctx.moveTo(ctx.canvas.width, cy);
+	ctx.lineTo(cx, cy);
+	ctx.moveTo(cx, 0);
+	ctx.lineTo(cx, cy);
+	ctx.moveTo(cx, ctx.canvas.height);
+	ctx.lineTo(cx, cy);
+	ctx.stroke();
+	ctx.restore();
 }
 
 function unit_triangle_path(ctx, cx, cy, dx, dy, r) {
