@@ -19,16 +19,16 @@ function player(money, shed = {}, extras = {}) {
 	};
 }
 
-function resolve(players, actions, configuration = {}) {
+function resolve(players, actions, configuration = {}, extras = {}) {
 	let inventory = Object.fromEntries(ITEMS.map(item => [item, 10000]));
 	let prices = Object.fromEntries(ITEMS.map(item => [item, market.market_price(item, inventory[item])]));
-	return market.resolve_turn({
+	return market.resolve_turn(Object.assign({
 		configuration: Object.assign({boardSize: 10, shedCapacity: 100}, configuration),
 		market: {inventory, prices},
 		farms: players.map(p => p.farm),
 		privates: players.map(p => p.privateState),
 		actions,
-	});
+	}, extras));
 }
 
 {
@@ -101,12 +101,43 @@ function resolve(players, actions, configuration = {}) {
 }
 
 {
-	// The referenced runner does not apply shedCapacity to market purchases; this
-	// guards fidelity even though unit DROP/PLACE operations do use the capacity.
+	// Market purchases obey shedCapacity: a full shed blocks product and animal
+	// buys, and a buy larger than the remaining room is only partially fulfilled.
+	let results = resolve([player(1000, {WHEAT: 100}), player(1000, {WOOL: 100})], [
+		{market: [["BUY_PRODUCT", "WHEAT", 1]]},
+		{market: [["BUY_ANIMAL", "GOOSE", 1]]},
+	]);
+	assert.deepEqual(results.map(r => r[0]), [
+		{requested: 1, fulfilled: 0, money: 0, status: "failure"},
+		{requested: 1, fulfilled: 0, money: 0, status: "failure"},
+	]);
+}
+
+{
+	let results = resolve([player(1000, {WHEAT: 98}), player(0)], [
+		{market: [["BUY_PRODUCT", "WHEAT", 5]]},
+		{market: []},
+	]);
+	assert.deepEqual(results[0][0], {requested: 5, fulfilled: 2, money: -52, status: "partial"});
+}
+
+{
+	// A sale earlier in the queue frees room for a later buy.
+	let results = resolve([player(1000, {WHEAT: 99, CARROT: 1}), player(0)], [
+		{market: [["SELL", "CARROT", 1], ["BUY_PRODUCT", "FERTILIZER", 2]]},
+		{market: []},
+	]);
+	assert.deepEqual(results[0].map(r => r.status), ["success", "partial"]);
+	assert.equal(results[0][1].fulfilled, 1);
+}
+
+{
+	// Replays from runners predating the capacity check are resolved with the old
+	// rules: the shed_capacity_bug flag lets buys overfill the shed.
 	let results = resolve([player(1000, {WHEAT: 100}), player(0)], [
 		{market: [["BUY_PRODUCT", "WHEAT", 1]]},
 		{market: []},
-	]);
+	], {}, {shed_capacity_bug: true});
 	assert.equal(results[0][0].status, "success");
 }
 
