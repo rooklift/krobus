@@ -155,7 +155,8 @@ function draw(replay, index, selection, hover, swap) {		// selection: see hub.cl
 		ctx.fillRect(0, 0, cv.width, cv.height);
 
 		draw_board(ctx, replay.tiles(index, pl), bs, day, PAD, PAD);
-		draw_units(ctx, replay.units(index, pl), replay.unit_moves(index, pl), PAD, PAD);
+		draw_units(ctx, replay.units(index, pl), replay.unit_moves(index, pl),
+			replay.inventories(index, pl), PAD, PAD);
 
 		let hl = null;										// The highlighted tile for this player, if any. For a
 		if (selection && selection.player === pl) {			// unit selection this follows the unit around the board.
@@ -295,7 +296,7 @@ function draw_tile(ctx, tile, day, px, py) {
 	}
 }
 
-function draw_units(ctx, units, moves, ox, oy) {
+function draw_units(ctx, units, moves, inventories, ox, oy) {
 
 	// Units on the same tile are offset into a small cluster so all remain visible.
 	// A unit about to move is drawn as a triangle pointing its way instead of a circle.
@@ -313,14 +314,17 @@ function draw_units(ctx, units, moves, ox, oy) {
 		let [dx, dy] = offsets[stack % offsets.length];
 		let cx = ox + (x + 0.5 + dx) * TILE_SIZE;
 		let cy = oy + (y + 0.5 + dy) * TILE_SIZE;
-		let radius = TILE_SIZE * 0.14;		// The farmer (n === 0) is only special in being permanent; the yellow fill marks him.
+		let radius = TILE_SIZE * 0.14;
+		let carrying = Object.values(inventories[n] || {}).some(count => count > 0);
 		ctx.beginPath();
 		if (moves[n]) {
 			unit_triangle_path(ctx, cx, cy, moves[n][0], moves[n][1], radius);
 		} else {
 			ctx.arc(cx, cy, radius, 0, Math.PI * 2);
 		}
-		ctx.fillStyle = (n === 0) ? "#ffe066" : "#f0f0f0";
+		ctx.fillStyle = (n === 0)
+			? (carrying ? "#ee8833" : "#ffe066")
+			: (carrying ? "#9edcf5" : "#f0f0f0");
 		ctx.fill();
 		ctx.strokeStyle = "#222222";
 		ctx.lineWidth = 1.5;
