@@ -59,7 +59,7 @@ module.exports = {
 		if (key === "farm_info") {
 			let label_strings = {
 				1: "Inventory and actions",
-				2: "Profits",
+				2: "Profit and loss",
 			};
 			let label = label_strings[config.farm_info];
 			ipcRenderer.send("set_checks", ["Options", "Farm info", label]);

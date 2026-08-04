@@ -243,7 +243,7 @@ function menu_build() {
 							}
 						},
 						{
-							label: "Profits",
+							label: "Profit and loss",
 							type: "checkbox",
 							accelerator: "F2",
 							checked: config.farm_info === 2,
