@@ -257,7 +257,8 @@ function menu_build() {
 					type: "separator"
 				},
 				{
-					label: "Swap players",
+					label: "Flip players",
+					accelerator: "CommandOrControl+F",
 					click: () => {
 						win.webContents.send("call", "swap_players");
 					}
