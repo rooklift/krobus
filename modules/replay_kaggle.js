@@ -1,6 +1,7 @@
 "use strict";
 
 const market = require("./market");
+const destruction = require("./destruction");
 
 const FARMER_MOVES = {			// Copied from the runner. y grows downward.
 	NORTH: [0, -1],
@@ -22,6 +23,7 @@ function load(o) {					// Where o is an object already decoded from JSON.
 	ret.market_results = precompute_market_results(ret);
 	ret.sales_summaries = precompute_order_summaries(ret, sale_summary_key, "sold");
 	ret.purchase_summaries = precompute_order_summaries(ret, purchase_summary_key, "bought");
+	ret.destruction_summaries = destruction.precompute(ret);
 	return ret;
 }
 
@@ -238,6 +240,10 @@ const kaggle_replay_props = {
 
 	purchase_summary: function(i, pl) {
 		return this.purchase_summaries[i][pl];
+	},
+
+	destruction_summary: function(i, pl) {
+		return this.destruction_summaries[i][pl];
 	},
 
 	// Private data is per-player, on that player's own observation...

@@ -97,4 +97,21 @@ assert.deepEqual(purchase_replay.purchase_summary(1, 0), {
 	LAND: {bought: 2, money: -3000},
 }, "purchases use fulfilled quantities, group categories, and retain their negative costs");
 
+let destruction_source = {
+	configuration: {boardSize: 10, shedCapacity: 1},
+	steps: [
+		[{observation: observation(0, {CARROT: 1}), action: {}}],
+		[{observation: observation(0, {CARROT: 1}), action: {farmer: ["DROP"]}}],
+		[{observation: observation(0, {CARROT: 1}), action: {farmer: ["DROP"]}}],
+	],
+};
+destruction_source.steps[0][0].observation.private.inventories[0] = {WHEAT: 2};
+destruction_source.steps[1][0].observation.private.inventories[0] = {MILK: 1};
+let destruction_replay = replay_kaggle.load(destruction_source);
+assert.deepEqual(destruction_replay.destruction_summary(0, 0), {}, "the initial state has no destruction");
+assert.deepEqual(destruction_replay.destruction_summary(1, 0), {WHEAT: 2},
+	"destruction uses the action leading to the observed step");
+assert.deepEqual(destruction_replay.destruction_summary(2, 0), {WHEAT: 2, MILK: 1},
+	"destruction summaries are cumulative at every replay step");
+
 console.log("replay kaggle tests passed");

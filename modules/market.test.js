@@ -92,6 +92,18 @@ function resolve(players, actions, configuration = {}, extras = {}) {
 }
 
 {
+	let p0 = player(1000, {}, {
+		farm: {tiles: Array.from({length: 10}, (_, y) => Array.from({length: 10}, (_, x) => x === 4 && y === 4 ? "LOCKED" : null))},
+		privateState: {inventories: [{WHEAT: 2}]},
+	});
+	let results = resolve([p0, player(0)], [
+		{farmer: ["DROP"], market: [["SELL", "WHEAT", 2]]},
+		{market: []},
+	]);
+	assert.equal(results[0][0].status, "failure", "inventory actions on a locked tile are no-ops");
+}
+
+{
 	let results = resolve([player(1), player(0)], [
 		{market: [["HIRE"], ["HIRE"], ["BUY_LAND"]]},
 		{market: []},

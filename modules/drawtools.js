@@ -483,6 +483,7 @@ function draw_player_sales(replay, index, pl, div) {
 	append_financial_table(div, "Sales", sale_rows, widths);
 	div.appendChild(document.createTextNode("\n\n"));
 	append_financial_table(div, "Costs", purchase_rows, widths);
+	div.appendChild(document.createTextNode(`\n\nDestroyed: ${itemlist(replay.destruction_summary(index, pl))}`));
 }
 
 function financial_rows(items, summary, units_key) {
