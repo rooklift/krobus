@@ -125,7 +125,6 @@ function apply_pre_market_unit_actions(farm, privateState, action, configuration
 		let inv = inventories[idx] || (inventories[idx] = {});
 		let position = positions[idx];
 		let tile = farm.tiles && farm.tiles[position[1]] && farm.tiles[position[1]][position[0]];
-		if (tile === "LOCKED") continue;
 
 		if (order[0] === "DROP" && is_shed_adjacent(position, boardSize)) {
 			for (let [item, n] of Object.entries(inv)) {

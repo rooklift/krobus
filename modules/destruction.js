@@ -166,7 +166,6 @@ function apply_unit_action(farm, private_state, index, action, context, destroye
 	if (["NORTH", "SOUTH", "EAST", "WEST", "PASS"].includes(op)) return;
 
 	let tile = farm.tiles[y][x];
-	if (tile === "LOCKED") return;
 
 	if (op === "DROP") {
 		if (is_shed_adjacent(pos, context.board_size)) {
@@ -186,6 +185,26 @@ function apply_unit_action(farm, private_state, index, action, context, destroye
 		add(inv, item, n);
 		return;
 	}
+
+	if (op === "PLACE") {
+		if (action.length < 2) return;
+		let item = action[1];
+		if (ANIMALS[item] && tile && typeof tile === "object" && tile.kind === ANIMALS[item].structure &&
+				!Object.prototype.hasOwnProperty.call(tile, "animal")) {
+			if (take(inv, item)) farm.tiles[y][x] = new_animal(item, context.day);
+			return;
+		}
+		if (!is_shed_adjacent(pos, context.board_size)) return;
+		let n = action.length >= 3 ? python_int(action[2]) : 1;
+		if (n === null || n <= 0) return;
+		n = Math.min(n, inv[item] || 0, Math.max(0, context.shed_capacity - shed_count(private_state.shed)));
+		if (n <= 0) return;
+		take(inv, item, n);
+		private_state.shed[item] = (private_state.shed[item] || 0) + n;
+		return;
+	}
+
+	if (tile === "LOCKED") return;
 
 	if (op === "PLANT") {
 		if (action.length < 2 || !Object.prototype.hasOwnProperty.call(CROPS, action[1]) || tile !== null) return;
@@ -244,24 +263,6 @@ function apply_unit_action(farm, private_state, index, action, context, destroye
 
 	if (op === "BUILD_COOP" || op === "BUILD_PASTURE") {
 		if (tile === null) farm.tiles[y][x] = {kind: op === "BUILD_COOP" ? "COOP" : "PASTURE"};
-		return;
-	}
-
-	if (op === "PLACE") {
-		if (action.length < 2) return;
-		let item = action[1];
-		if (ANIMALS[item] && tile && typeof tile === "object" && tile.kind === ANIMALS[item].structure &&
-				!Object.prototype.hasOwnProperty.call(tile, "animal")) {
-			if (take(inv, item)) farm.tiles[y][x] = new_animal(item, context.day);
-			return;
-		}
-		if (!is_shed_adjacent(pos, context.board_size)) return;
-		let n = action.length >= 3 ? python_int(action[2]) : 1;
-		if (n === null || n <= 0) return;
-		n = Math.min(n, inv[item] || 0, Math.max(0, context.shed_capacity - shed_count(private_state.shed)));
-		if (n <= 0) return;
-		take(inv, item, n);
-		private_state.shed[item] = (private_state.shed[item] || 0) + n;
 		return;
 	}
 

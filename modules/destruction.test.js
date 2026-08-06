@@ -38,17 +38,31 @@ function analyze(game_state, action, extras = {}) {
 	game_state.farm.tiles[4][4] = "LOCKED";
 	assert.deepEqual(analyze(game_state, {farmer: ["DROP"]}, {
 		configuration: {boardSize: 10, shedCapacity: 1, turnsPerDay: 24},
-	}), {}, "DROP on a locked shed-access tile is a no-op");
+	}), {WHEAT: 2}, "DROP works from a locked shed-access tile and records its overflow");
 }
 
 {
 	let game_state = state({CARROT: 2}, [{}, {WHEAT: 2}], {hands: [[5, 4]]});
+	game_state.farm.tiles[4][4] = "LOCKED";
+	game_state.farm.tiles[4][5] = "LOCKED";
 	assert.deepEqual(analyze(game_state, {
 		farmer: ["PICKUP", "CARROT", 1],
 		hands: [["DROP"]],
 	}, {
 		configuration: {boardSize: 10, shedCapacity: 2, turnsPerDay: 24},
-	}), {WHEAT: 1}, "unit actions share shed capacity in execution order");
+	}), {WHEAT: 1}, "locked shed actions share capacity in execution order");
+}
+
+{
+	let game_state = state({CARROT: 1}, [{WHEAT: 1}, {MILK: 2}], {hands: [[5, 4]]});
+	game_state.farm.tiles[4][4] = "LOCKED";
+	game_state.farm.tiles[4][5] = "LOCKED";
+	assert.deepEqual(analyze(game_state, {
+		farmer: ["PLACE", "WHEAT", 1],
+		hands: [["DROP"]],
+	}, {
+		configuration: {boardSize: 10, shedCapacity: 2, turnsPerDay: 24},
+	}), {MILK: 2}, "shed PLACE works from a locked access tile before a later DROP");
 }
 
 {

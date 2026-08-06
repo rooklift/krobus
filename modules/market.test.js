@@ -100,7 +100,23 @@ function resolve(players, actions, configuration = {}, extras = {}) {
 		{farmer: ["DROP"], market: [["SELL", "WHEAT", 2]]},
 		{market: []},
 	]);
-	assert.equal(results[0][0].status, "failure", "inventory actions on a locked tile are no-ops");
+	assert.equal(results[0][0].status, "success", "DROP works from a locked shed-access tile");
+}
+
+{
+	let locked_tiles = Array.from({length: 10}, (_, y) =>
+		Array.from({length: 10}, (_, x) => x === 4 && y === 4 ? "LOCKED" : null));
+	let pickup = player(1000, {WHEAT: 2}, {farm: {tiles: locked_tiles}});
+	let place = player(1000, {}, {
+		farm: {tiles: locked_tiles},
+		privateState: {inventories: [{WHEAT: 1}]},
+	});
+	let results = resolve([pickup, place], [
+		{farmer: ["PICKUP", "WHEAT", 2], market: [["SELL", "WHEAT", 2]]},
+		{farmer: ["PLACE", "WHEAT", 1], market: [["SELL", "WHEAT", 1]]},
+	]);
+	assert.equal(results[0][0].status, "failure", "PICKUP works from a locked shed-access tile");
+	assert.equal(results[1][0].status, "success", "shed PLACE works from a locked shed-access tile");
 }
 
 {
