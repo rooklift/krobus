@@ -98,6 +98,18 @@ let hub_main_props = {
 		this.draw();
 	},
 
+	find_first_divergence() {
+		if (!this.replay) {
+			return;
+		}
+		let i = this.replay.first_divergence();
+		if (i === null) {
+			alert("No divergence found: all players issue the same actions.");
+			return;
+		}
+		this.seek(i);
+	},
+
 	seek(i) {
 		if (!this.replay || !Number.isInteger(i)) {
 			return;

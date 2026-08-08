@@ -1,5 +1,6 @@
 "use strict";
 
+const {isDeepStrictEqual} = require("node:util");
 const market = require("./market");
 
 const FARMER_MOVES = {			// Copied from the runner. y grows downward.
@@ -122,6 +123,20 @@ const kaggle_replay_props = {
 
 	num_players: function() {
 		return this.r.steps[0].length;
+	},
+
+	first_divergence: function() {
+
+		// Actions submitted in response to frame i are stored on step i + 1. The last
+		// frame therefore has no action to compare. Object key order is not meaningful.
+
+		for (let i = 0; i + 1 < this.length(); i++) {
+			let actions = this.r.steps[i + 1].map(step => step.action);
+			if (actions.slice(1).some(action => !isDeepStrictEqual(action, actions[0]))) {
+				return i;
+			}
+		}
+		return null;
 	},
 
 	board_size: function() {

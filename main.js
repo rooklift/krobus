@@ -373,6 +373,15 @@ function menu_build() {
 					}
 				},
 				{
+					type: "separator",
+				},
+				{
+					label: "Find first divergence",
+					click: () => {
+						win.webContents.send("call", "find_first_divergence");
+					}
+				},
+				{
 					label: "Clear selection (HIDDEN)",
 					accelerator: "Escape",
 					visible: false,

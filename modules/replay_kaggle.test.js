@@ -97,4 +97,37 @@ assert.deepEqual(purchase_replay.purchase_summary(1, 0), {
 	LAND: {bought: 2, money: -3000},
 }, "purchases use fulfilled quantities, group categories, and retain their negative costs");
 
+function multiplayer_observations() {
+	let shared = observation(0);
+	shared.farms.push(JSON.parse(JSON.stringify(shared.farms[0])));
+	return [0, 1].map(() => JSON.parse(JSON.stringify(shared)));
+}
+
+function multiplayer_step(actions) {
+	let observations = multiplayer_observations();
+	return actions.map((action, pl) => ({observation: observations[pl], action}));
+}
+
+let divergence_source = {
+	configuration: {boardSize: 10, shedCapacity: 100},
+	steps: [
+		multiplayer_step([{farmer: ["IGNORED"]}, {farmer: ["DIFFERENT BUT IGNORED"]}]),
+		multiplayer_step([
+			{farmer: ["NORTH"], hands: [], market: []},
+			{market: [], hands: [], farmer: ["NORTH"]},
+		]),
+		multiplayer_step([
+			{farmer: ["EAST"], hands: [], market: []},
+			{farmer: ["WEST"], hands: [], market: []},
+		]),
+	],
+};
+
+assert.equal(replay_kaggle.load(divergence_source).first_divergence(), 1,
+		"finds the displayed frame for the first differing action and ignores object key order");
+
+divergence_source.steps[2][1].action = {market: [], farmer: ["EAST"], hands: []};
+assert.equal(replay_kaggle.load(divergence_source).first_divergence(), null,
+		"returns null when all submitted actions match");
+
 console.log("replay kaggle tests passed");
